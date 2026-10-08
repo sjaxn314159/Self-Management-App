@@ -11,7 +11,9 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon-180.svg">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-base-a.css">
+  <link rel="stylesheet" href="styles-base-b.css">
+  <link rel="stylesheet" href="styles-mobile.css">
 </head>
 <body>
   <div id="boot" class="boot"><div class="spinner"></div><div>Connecting to your system…</div></div>
@@ -68,6 +70,11 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="app-core.js"></script>
+  <script src="app-views-a.js"></script>
+  <script src="app-views-b.js"></script>
+  <script src="app-bind.js"></script>
+  <script src="app-forms.js"></script>
+  <script src="app-boot.js"></script>
 </body>
 </html>
