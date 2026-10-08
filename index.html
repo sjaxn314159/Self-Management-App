@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f6f9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Self Management">
+  <title>Self Management</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-180.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="boot" class="boot"><div class="spinner"></div><div>Connecting to your system…</div></div>
+  <div id="setup" class="setup hidden">
+    <div class="setup-card">
+      <img src="assets/icon.svg" class="setup-logo" alt="">
+      <h1>One setup step left</h1>
+      <p>Enter your private API key once on this device.</p>
+      <form id="setupForm">
+        <input id="setupUrl" type="hidden">
+        <label>API key</label>
+        <input id="setupKey" class="field" type="password" autocomplete="off" placeholder="Paste your API key" required>
+        <button class="btn primary" type="submit">Connect</button>
+      </form>
+      <p class="muted">The key is stored only in this browser on this device. It is not stored in GitHub.</p>
+    </div>
+  </div>
+
+  <div id="app" class="shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><img src="assets/icon.svg" alt=""></div>
+        <div><strong>Self Management</strong><span>V3.0</span></div>
+      </div>
+      <nav id="sideNav"></nav>
+      <div class="sidebar-foot">Google Sheets<br><span>Source of truth</span></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div id="eyebrow" class="eyebrow">COMMAND CENTER</div>
+          <h1 id="pageTitle">Today</h1>
+          <div id="pageDate" class="page-date"></div>
+        </div>
+        <button id="headerAdd" class="btn primary">+ Add Action</button>
+      </header>
+      <section id="view"></section>
+    </main>
+
+    <nav id="bottomNav" class="bottom-nav"></nav>
+    <button id="fab" class="fab" aria-label="Add action">+</button>
+  </div>
+
+  <div id="sheet" class="sheet hidden" aria-hidden="true">
+    <div class="sheet-backdrop" data-close-sheet></div>
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><h2 id="sheetTitle"></h2><button class="icon-btn" data-close-sheet>×</button></div>
+      <div id="sheetBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
