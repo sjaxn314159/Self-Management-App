@@ -9,6 +9,9 @@ function bindView(){
   $$('[data-cal-nav]').forEach(b=>b.onclick=()=>{const n=Number(b.dataset.calNav);state.cursor=state.calendarMode==='month'?addMonths(state.cursor,n):addDays(state.cursor,n*(state.calendarMode==='week'?7:1));render()});
   $('[data-cal-today]')?.addEventListener('click',()=>{state.cursor=new Date();render()});
   $('[data-new-daily]')?.addEventListener('click',openDailyForm);$('[data-new-brag]')?.addEventListener('click',openBragForm);$('[data-new-project]')?.addEventListener('click',openProjectForm);
+  $('[data-new-note]')?.addEventListener('click',()=>openNoteForm());
+  $('#noteSearch')?.addEventListener('input',filterNotes);
+  $$('[data-edit-note]').forEach(b=>b.onclick=()=>openNoteForm((state.data.notes||[]).find(n=>n.noteId===b.dataset.editNote)));
   $$('[data-project]').forEach(b=>b.onclick=()=>openProjectDetail(b.dataset.project));
 }
 function filterActions(){const q=($('#actionSearch')?.value||'').toLowerCase(),s=$('#statusFilter')?.value,p=$('#priorityFilter')?.value;$$('#actionBody tr').forEach(r=>{r.style.display=((!q||r.dataset.search.includes(q))&&(s==='All Statuses'||r.dataset.status===s)&&(p==='All Priorities'||r.dataset.priority===p))?'':'none'});}

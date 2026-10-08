@@ -1,6 +1,7 @@
 async function boot(){
   const savedUrl=(window.SM_CONFIG||{}).apiUrl || localStorage.getItem('sm_api_url') || '';
-  const savedKey=localStorage.getItem('sm_api_key') || '';
+  let savedKey='';
+  try{savedKey=localStorage.getItem('sm_api_key') || '';}catch(err){console.warn('Browser storage unavailable',err);}
   if(!savedUrl || !savedKey){
     $('#boot').classList.add('hidden');$('#setup').classList.remove('hidden');
     $('#setupUrl').value=savedUrl;
@@ -8,7 +9,7 @@ async function boot(){
       e.preventDefault();
       const url=$('#setupUrl').value.trim(),key=$('#setupKey').value.trim();
       if(!url||!key)return;
-      localStorage.setItem('sm_api_url',url);localStorage.setItem('sm_api_key',key);
+      try{localStorage.setItem('sm_api_url',url);localStorage.setItem('sm_api_key',key);if(localStorage.getItem('sm_api_key')!==key)throw Error('Key did not persist');}catch(err){toast('This device is blocking local storage. Check Safari website data settings.');return;}
       location.reload();
     };
     return;

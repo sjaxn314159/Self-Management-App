@@ -10,7 +10,7 @@ const state = {
 
 const nav = [
   ['today','⌂','Today'],['actions','☑','Actions'],['calendar','▣','Calendar'],['routines','↻','Routines'],
-  ['daily','▤','Daily Log'],['brag','☆','Brag Sheet'],['projects','▣','Projects']
+  ['daily','▤','Daily Log'],['notes','✎','Notes'],['brag','☆','Brag Sheet'],['projects','▣','Projects']
 ];
 
 class ApiClient {
@@ -72,13 +72,13 @@ function actionsForDate(d){const ds=iso(d);return (state.data.actions||[]).filte
 
 function setRoute(route){state.route=route;render();window.scrollTo(0,0);}
 function routeMeta(){
-  const m={today:['COMMAND CENTER','Today'],actions:['EXECUTION','Action Items'],calendar:['TIME HORIZON','Calendar'],routines:['RHYTHM','Routines'],daily:['SYSTEM OF RECORD','Daily Log'],brag:['WINS','Brag Sheet'],projects:['PORTFOLIO','Projects']};
+  const m={today:['COMMAND CENTER','Today'],actions:['EXECUTION','Action Items'],calendar:['TIME HORIZON','Calendar'],routines:['RHYTHM','Routines'],daily:['SYSTEM OF RECORD','Daily Log'],brag:['WINS','Brag Sheet'],projects:['PORTFOLIO','Projects'],notes:['KNOWLEDGE BASE','Notes']};
   return m[state.route]||m.today;
 }
 function renderNav(){
   $('#sideNav').innerHTML=nav.map(([r,i,l])=>`<button class="nav-btn ${state.route===r?'active':''}" data-route="${r}"><span class="nav-ico">${i}</span>${l}</button>`).join('');
   const bottom=[['today','⌂','Today'],['actions','☑','Actions'],['calendar','▣','Calendar'],['more','•••','More']];
-  $('#bottomNav').innerHTML=bottom.map(([r,i,l])=>`<button class="${(r==='more'?['routines','daily','brag','projects'].includes(state.route):state.route===r)?'active':''}" data-bottom="${r}"><span class="ico">${i}</span><span>${l}</span></button>`).join('');
+  $('#bottomNav').innerHTML=bottom.map(([r,i,l])=>`<button class="${(r==='more'?['routines','daily','brag','projects','notes'].includes(state.route):state.route===r)?'active':''}" data-bottom="${r}"><span class="ico">${i}</span><span>${l}</span></button>`).join('');
 }
 function render(){
   const [eye,title]=routeMeta();$('#eyebrow').textContent=eye;$('#pageTitle').textContent=title;$('#pageDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
@@ -91,6 +91,7 @@ function render(){
   if(state.route==='daily')v.innerHTML=renderDaily();
   if(state.route==='brag')v.innerHTML=renderBrag();
   if(state.route==='projects')v.innerHTML=renderProjects();
+  if(state.route==='notes')v.innerHTML=renderNotes();
   bindView();
 }
 

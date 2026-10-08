@@ -9,11 +9,12 @@
   <meta name="apple-mobile-web-app-title" content="Self Management">
   <title>Self Management</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="assets/icon-180.svg">
+  <link rel="icon" href="assets/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
   <link rel="stylesheet" href="styles-base-a.css">
   <link rel="stylesheet" href="styles-base-b.css">
   <link rel="stylesheet" href="styles-mobile.css">
+  <link rel="stylesheet" href="styles-notes.css">
 </head>
 <body>
   <div id="boot" class="boot"><div class="spinner"></div><div>Connecting to your system…</div></div>
@@ -36,7 +37,7 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark"><img src="assets/icon.svg" alt=""></div>
-        <div><strong>Self Management</strong><span>V3.0</span></div>
+        <div><strong>Self Management</strong><span>V4.0</span></div>
       </div>
       <nav id="sideNav"></nav>
       <div class="sidebar-foot">Google Sheets<br><span>Source of truth</span></div>
@@ -71,6 +72,7 @@
   <script src="app-views-a.js"></script>
   <script src="app-views-b1.js"></script>
   <script src="app-views-b2.js"></script>
+  <script src="app-notes.js"></script>
   <script src="app-bind.js"></script>
   <script src="app-forms.js"></script>
   <script src="app-boot.js"></script>
