@@ -9,13 +9,9 @@
   <meta name="apple-mobile-web-app-title" content="Self Management">
   <title>Self Management</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="assets/icon-192.png" type="image/png">
-  <link rel="apple-touch-icon" href="assets/icon-180.png">
-  <link rel="stylesheet" href="styles-base-a.css">
-  <link rel="stylesheet" href="styles-base-b.css">
-  <link rel="stylesheet" href="styles-mobile.css">
-  <link rel="stylesheet" href="styles-notes.css">
-  <link rel="stylesheet" href="styles-v32-extra.css">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-180.svg">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div id="boot" class="boot"><div class="spinner"></div><div>Connecting to your system…</div></div>
@@ -38,11 +34,12 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark"><img src="assets/icon.svg" alt=""></div>
-        <div><strong>Self Management</strong><span>V3.2</span></div>
+        <div><strong>Self Management</strong><span>V3.3</span></div>
       </div>
       <nav id="sideNav"></nav>
       <div class="sidebar-foot">Google Sheets<br><span>Source of truth</span></div>
     </aside>
+
     <main class="main">
       <header class="topbar">
         <div>
@@ -54,6 +51,7 @@
       </header>
       <section id="view"></section>
     </main>
+
     <nav id="bottomNav" class="bottom-nav"></nav>
     <button id="fab" class="fab" aria-label="Add action">+</button>
   </div>
@@ -66,13 +64,10 @@
       <div id="sheetBody"></div>
     </div>
   </div>
+
   <div id="toast" class="toast hidden"></div>
 
   <script src="config.js"></script>
-  <script src="app-v32-core.js"></script>
-  <script src="app-v32-views.js"></script>
-  <script src="app-v32-forms.js"></script>
-  <script src="app-v32-goals.js"></script>
-  <script src="app-v32-boot.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
