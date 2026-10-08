@@ -1,0 +1,45 @@
+function renderGoals(){
+  const goals=(state.data.goals||[]).slice().sort((a,b)=>{const ac=a.status==='Complete'?1:0,bc=b.status==='Complete'?1:0;return ac-bc||(a.targetDate||'9999').localeCompare(b.targetDate||'9999')});
+  if(!goals.length)return `${section('Goals','Outcomes that organize projects, actions, milestones and evidence.',empty('No goals yet.'),'<button class="btn primary" data-new-goal>+ New Goal</button>')}`;
+  return `<div class="goal-grid">${goals.map(g=>{
+    const milestones=(state.data.goalMilestones||[]).filter(m=>m.goalId===g.goalId),projects=(state.data.projects||[]).filter(p=>p.goalId===g.goalId),actions=(state.data.actions||[]).filter(a=>a.goalId===g.goalId&&!isDone(a));
+    return `<button class="goal-card" data-goal="${esc(g.goalId)}"><div class="goal-card-top"><span class="pill ${priorityClass(g.priority)}">${esc(g.priority)}</span><span class="goal-health ${String(g.health||'green').toLowerCase()}">${esc(g.health||'Green')}</span></div><h3>${esc(g.goal)}</h3><div class="meta"><span>${esc(g.status||'Not Started')}</span><span>${esc(g.source||'Self')}</span>${g.reviewPeriod?`<span>${esc(g.reviewPeriod)}</span>`:''}${g.targetDate?`<span>Due ${esc(fmtDate(g.targetDate))}</span>`:''}</div><div class="progress"><div style="width:${pct(g.percentComplete)}%"></div></div><div class="goal-progress-row"><strong>${pct(g.percentComplete)}%</strong><span>${milestones.filter(m=>m.status==='Complete').length}/${milestones.length} milestones · ${projects.length} projects · ${actions.length} open actions</span></div></button>`;
+  }).join('')}</div><button class="btn primary" data-new-goal>+ New Goal</button>`;
+}
+function linkedRow(title,meta=''){return `<div class="log-row"><strong>${esc(title)}</strong>${meta?`<div class="meta">${meta}</div>`:''}</div>`;}
+
+function renderNotes(){
+  const rows=(state.data.notes||[]).slice();
+  return `<div class="card"><div class="card-head"><div><h3>Notes</h3><p>Just notes. No workflow required.</p></div><button class="btn primary" data-new-note>+ New Note</button></div>
+    <div class="card-body"><div class="notes-toolbar"><input class="field" id="notesSearch" placeholder="Search notes…"></div>
+    <div id="notesList">${rows.length?rows.map(n=>`<article class="note-card" data-note-search="${esc(((n.title||'')+' '+(n.note||'')+' '+(n.tags||'')+' '+(n.projectId||'')+' '+(n.goalId||'')).toLowerCase())}"><div class="note-card-head"><div><strong>${n.pinned==='Yes'?'📌 ':''}${esc(n.title||fmtDate(n.date)||'Note')}</strong><div class="meta"><span>${esc(fmtDate(n.date))}</span>${n.tags?`<span>${esc(n.tags)}</span>`:''}${n.projectId?`<span>${esc(n.projectId)}</span>`:''}${n.goalId?`<span>◎ ${esc(goalName(n.goalId)||n.goalId)}</span>`:''}</div></div><button class="link-btn" data-edit-note="${esc(n.noteId)}">Edit</button></div><div class="note-text">${esc(n.note).replace(/\n/g,'<br>')}</div></article>`).join(''):empty('No notes yet.')}</div></div></div>`;
+}
+function renderRoutines(){const d=new Date();const groups={Daily:[],Monthly:[],Quarterly:[],Annually:[]};(state.data.routines||[]).forEach(r=>(groups[r.frequency]||groups.Daily).push(r));return Object.entries(groups).map(([g,items])=>section(g, state.data.app.scheduleRules[g]||'', items.length?items.map(r=>`<div class="log-row"><strong>${esc(r.task)}</strong><div class="meta"><span>${esc(r.document||'')}</span></div></div>`).join(''):empty('None'))).join('');}
+function renderDaily(){const rows=(state.data.dailyLog||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));return `<div class="card"><div class="card-head"><div><h3>Daily Log</h3><p>What happened that may matter later.</p></div><button class="btn primary" data-new-daily>+ Log Entry</button></div><div class="card-body">${rows.length?rows.map(x=>`<div class="log-row"><strong>${esc(x.summary)}</strong><div class="meta"><span>${esc(fmtDate(x.date))}</span><span>${esc(x.type)}</span><span>${esc(x.significance)}</span>${x.projectId?`<span>${esc(x.projectId)}</span>`:''}${x.goalId?`<span>◎ ${esc(goalName(x.goalId)||x.goalId)}</span>`:''}</div>${x.details?`<div class="muted" style="margin-top:6px">${esc(x.details)}</div>`:''}</div>`).join(''):empty('No entries yet.')}</div></div>`;}
+function renderBrag(){const rows=(state.data.brag||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));return `<div class="card"><div class="card-head"><div><h3>Brag Sheet</h3><p>Wins worth remembering.</p></div><button class="btn primary" data-new-brag>+ Add Win</button></div><div class="card-body">${rows.length?rows.map(x=>`<div class="brag-row"><strong>${esc(x.accomplishment)}</strong><div class="meta"><span>${esc(fmtDate(x.date))}</span><span>${esc(x.category)}</span>${x.metric?`<span>${esc(x.metric)}</span>`:''}${x.goalId?`<span>◎ ${esc(goalName(x.goalId)||x.goalId)}</span>`:''}</div>${x.impact?`<div class="muted" style="margin-top:6px">${esc(x.impact)}</div>`:''}</div>`).join(''):empty('No wins yet.')}</div></div>`;}
+function renderProjects(){const p=state.data.projects||[];return `<div class="project-grid">${p.map(x=>`<button class="project-tile" data-project="${esc(x.projectId)}"><h3>${esc(x.projectName)}</h3><div class="meta"><span><i class="status-dot ${String(x.health).toLowerCase()}"></i>${esc(x.health)}</span><span>${esc(x.status)}</span></div><div class="meta"><span>${esc(x.projectId)}</span>${x.targetDate?`<span>Target ${esc(fmtDate(x.targetDate))}</span>`:''}${x.goalId?`<span>◎ ${esc(goalName(x.goalId)||x.goalId)}</span>`:''}</div></button>`).join('')}${!p.length?empty('No projects yet.'):''}</div><button class="btn primary" data-new-project>+ New Project</button>`;}
+function renderMoreSheet(){openSheet('More',`<div class="more-grid">${nav.slice(3).map(([r,i,l])=>`<button class="more-card" data-more-route="${r}"><strong>${i} ${l}</strong><span>Open ${l}</span></button>`).join('')}</div>`);}
+
+function bindView(){
+  $$('[data-route]').forEach(b=>b.onclick=()=>setRoute(b.dataset.route));
+  $$('[data-edit-id]').forEach(b=>b.onclick=()=>openAction((state.data.actions||[]).find(a=>String(a.actionId||a.row)===String(b.dataset.editId))||{}));
+  $$('[data-complete-id]').forEach(b=>b.onclick=()=>busy(bridge.call('setActionStatus',b.dataset.completeId,'Done'),'Completed'));
+  $$('[data-routine-id]').forEach(b=>{if(!b.disabled)b.onclick=()=>busy(bridge.call('markRoutineComplete',b.dataset.routineId,b.dataset.routineDate,''),'Routine complete')});
+  $('#quickBtn')?.addEventListener('click',()=>{const v=$('#quickInput').value.trim();if(v)busy(bridge.call('quickCapture',v),'Captured')});
+  $('#actionSearch')?.addEventListener('input',filterActions);$('#statusFilter')?.addEventListener('change',filterActions);$('#priorityFilter')?.addEventListener('change',filterActions);
+  $$('[data-cal-mode]').forEach(b=>b.onclick=()=>{state.calendarMode=b.dataset.calMode;render()});
+  $$('[data-cal-nav]').forEach(b=>b.onclick=()=>{const n=Number(b.dataset.calNav);state.cursor=state.calendarMode==='month'?addMonths(state.cursor,n):addDays(state.cursor,n*(state.calendarMode==='week'?7:1));render()});
+  $('[data-cal-today]')?.addEventListener('click',()=>{state.cursor=new Date();render()});
+  $('[data-new-note]')?.addEventListener('click',()=>openNoteForm());$$('[data-edit-note]').forEach(b=>b.onclick=()=>openNoteForm((state.data.notes||[]).find(n=>n.noteId===b.dataset.editNote)||{}));
+  $('#notesSearch')?.addEventListener('input',()=>{const q=$('#notesSearch').value.toLowerCase();$$('[data-note-search]').forEach(n=>n.style.display=!q||n.dataset.noteSearch.includes(q)?'':'none')});
+  $('[data-new-daily]')?.addEventListener('click',()=>openDailyForm());$('[data-new-brag]')?.addEventListener('click',()=>openBragForm());$('[data-new-project]')?.addEventListener('click',()=>openProjectForm());
+  $$('[data-project]').forEach(b=>b.onclick=()=>openProjectDetail(b.dataset.project));
+  $('[data-new-goal]')?.addEventListener('click',()=>openGoalForm());$$('[data-goal]').forEach(b=>b.onclick=()=>openGoalDetail(b.dataset.goal));
+}
+function filterActions(){const q=($('#actionSearch')?.value||'').toLowerCase(),s=$('#statusFilter')?.value,p=$('#priorityFilter')?.value;$$('#actionBody tr').forEach(r=>{r.style.display=((!q||r.dataset.search.includes(q))&&(s==='All Statuses'||r.dataset.status===s)&&(p==='All Priorities'||r.dataset.priority===p))?'':'none'});}
+function filterNotes(){const q=($('#notesSearch')?.value||'').toLowerCase();$$('[data-note-search]').forEach(n=>n.style.display=!q||n.dataset.noteSearch.includes(q)?'':'none');}
+
+function openSheet(title,html){$('#sheetTitle').textContent=title;$('#sheetBody').innerHTML=html;$('.sheet-panel')?.classList.remove('wide');$('#sheet').classList.remove('hidden');$('#sheet').setAttribute('aria-hidden','false');bindSheet();}
+function closeSheet(){$('#sheet').classList.add('hidden');$('#sheet').setAttribute('aria-hidden','true');}
+function bindSheet(){$$('[data-close-sheet]').forEach(x=>x.onclick=closeSheet);$$('[data-more-route]').forEach(b=>b.onclick=()=>{closeSheet();setRoute(b.dataset.moreRoute)});}
+

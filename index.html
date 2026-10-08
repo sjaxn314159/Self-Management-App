@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="styles-base-b.css">
   <link rel="stylesheet" href="styles-mobile.css">
   <link rel="stylesheet" href="styles-notes.css">
+  <link rel="stylesheet" href="styles-v32-extra.css">
 </head>
 <body>
   <div id="boot" class="boot"><div class="spinner"></div><div>Connecting to your system…</div></div>
@@ -29,7 +30,7 @@
         <input id="setupKey" class="field" type="password" autocomplete="off" placeholder="Paste your API key" required>
         <button class="btn primary" type="submit">Connect</button>
       </form>
-      <p class="muted">The key is stored only in this browser on this device. It is not stored in GitHub.</p>
+      <p class="muted">The key stays in this browser on this device. It is not stored in GitHub.</p>
     </div>
   </div>
 
@@ -37,7 +38,7 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark"><img src="assets/icon.svg" alt=""></div>
-        <div><strong>Self Management</strong><span>V4.0</span></div>
+        <div><strong>Self Management</strong><span>V3.2</span></div>
       </div>
       <nav id="sideNav"></nav>
       <div class="sidebar-foot">Google Sheets<br><span>Source of truth</span></div>
@@ -68,13 +69,10 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="config.js"></script>
-  <script src="app-core.js"></script>
-  <script src="app-views-a.js"></script>
-  <script src="app-views-b1.js"></script>
-  <script src="app-views-b2.js"></script>
-  <script src="app-notes.js"></script>
-  <script src="app-bind.js"></script>
-  <script src="app-forms.js"></script>
-  <script src="app-boot.js"></script>
+  <script src="app-v32-core.js"></script>
+  <script src="app-v32-views.js"></script>
+  <script src="app-v32-forms.js"></script>
+  <script src="app-v32-goals.js"></script>
+  <script src="app-v32-boot.js"></script>
 </body>
 </html>
