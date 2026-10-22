@@ -24,3 +24,12 @@
 /* V3.3 Time Tracking */
 .time-two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}.time-break-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #edf0f4}.time-break-row:last-child{border-bottom:0}.time-entry-row{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;text-align:left;border:0;border-bottom:1px solid #edf0f4;background:transparent;padding:13px 0;color:var(--ink)}.time-entry-row:last-child{border-bottom:0}.time-entry-row:hover strong:first-child{color:var(--blue)}.completion-action{padding:14px 15px;border:1px solid var(--line);border-radius:14px;background:#f7f9fd;margin-bottom:14px}.completion-action strong{display:block;font-size:15px}.time-entry-row>strong{font-size:15px}.btn.danger{color:#bb3344}.btn.danger:hover{background:#fff2f3}.goal-detail-head .inline-actions,.project-detail-tools .inline-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:800px){.time-two-col{grid-template-columns:1fr}.time-entry-row{grid-template-columns:minmax(0,1fr) auto}.goal-detail-head .inline-actions,.project-detail-tools .inline-actions{width:100%;margin-top:10px}.goal-detail-head .inline-actions .btn,.project-detail-tools .inline-actions .btn{flex:1}.completion-action{margin-bottom:12px}}
+/* V3.4 – overdue visibility and save feedback */
+.action-row.today-overdue{background:#fff0f0;border-left:4px solid #d74444;padding-left:12px;border-radius:7px;}
+.action-row.today-overdue .action-main strong{color:#8d2222;}
+.action-row.today-overdue .meta:after{content:"OVERDUE";color:#b4232c;font-size:10px;font-weight:800;letter-spacing:.05em;}
+.repeat-preview-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #edf0f4;}
+.repeat-preview-row:last-child{border-bottom:0;}
+.repeat-preview-row strong{font-size:13px;}
+.repeat-date{white-space:nowrap;color:var(--muted);font-size:12px;}
+.sheet-actions button:disabled{cursor:wait;opacity:.7;}
