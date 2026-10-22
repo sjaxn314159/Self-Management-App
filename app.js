@@ -254,6 +254,7 @@ function bindSheet(){
     if(form.dataset.savingHook)return;
     form.dataset.savingHook='1';
     form.addEventListener('submit',event=>{
+      event.preventDefault();
       if(form.dataset.saving==='1'){event.preventDefault();event.stopImmediatePropagation();return;}
       form.dataset.saving='1';
       const button=form.querySelector('button[type="submit"],button:not([type])');
