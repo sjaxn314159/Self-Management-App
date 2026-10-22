@@ -137,7 +137,7 @@ function renderToday(){
     ${section('Quick Capture','Get it out of your head before your brain starts a side quest.',`<div class="quick"><input id="quickInput" class="field" placeholder="New action, idea, follow-up…"><button id="quickBtn" class="btn primary">Capture</button></div>`)}
     ${section("Today's Routines",'Repeating tasks from the Self Management Plan.',routineRows(routines),'<button class="link-btn" data-route="routines">All routines →</button>')}
     ${section('Coming Up','Next seven days.',soon.length?actionRows(soon):empty('No dated actions in the next seven days.'))}
-    ${section('Recurring Preview','Next 90 days · planned dates only; future actions are created after completing the current occurrence.',repeatPreview.length?repeatPreview.map(x=>`<div class="repeat-preview-row"><div><strong>${esc(x.task)}</strong><div class="meta"><span>↻ ${esc(x.pattern)}</span><span>${esc(x.priority)}</span></div></div><span class="repeat-date">${esc(fmtDate(x.date,{month:'short',day:'numeric',year:'numeric'}))}</span></div>`).join(''):empty('No additional recurring dates in the next 90 days.'))}
+    ${section('Recurring Preview','Next 90 days · planned dates only; future actions are created after completing the current occurrence.',repeatPreview.length?repeatPreview.map(x=>`<div class="repeat-preview-row"><div><strong>${esc(x.task)}</strong><div class="meta"><span>↻ ${esc(x.pattern)}</span><span>${esc(x.priority)}</span></div></div><span class="repeat-date">${esc(fmtDate(x.date,{month:'short',day:'numeric',year:'numeric'}))}</span></div>`).join(''):empty('No additional recurring dates in the next 90 days.'))}`;
 }
 function futureRepeatDate(isoDate,pattern,every){
   const d=parseIso(isoDate);if(!d)return '';
