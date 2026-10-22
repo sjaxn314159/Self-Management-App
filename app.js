@@ -248,9 +248,9 @@ function filterNotes(){const q=($('#notesSearch')?.value||'').toLowerCase();$$('
 function openSheet(title,html){$('#sheetTitle').textContent=title;$('#sheetBody').innerHTML=html;$('.sheet-panel')?.classList.remove('wide');$('#sheet').classList.remove('hidden');$('#sheet').setAttribute('aria-hidden','false');bindSheet();}
 function closeSheet(){$('#sheet').classList.add('hidden');$('#sheet').setAttribute('aria-hidden','true');}
 function bindSheet(){
-  $('[data-close-sheet]').forEach(x=>x.onclick=closeSheet);
-  $('[data-more-route]').forEach(b=>b.onclick=()=>{closeSheet();setRoute(b.dataset.moreRoute)});
-  $('#sheetBody form').forEach(form=>{
+  $$('[data-close-sheet]').forEach(x=>x.onclick=closeSheet);
+  $$('[data-more-route]').forEach(b=>b.onclick=()=>{closeSheet();setRoute(b.dataset.moreRoute)});
+  $$('#sheetBody form').forEach(form=>{
     if(form.dataset.savingHook)return;
     form.dataset.savingHook='1';
     form.addEventListener('submit',event=>{
