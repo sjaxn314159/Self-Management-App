@@ -71,5 +71,5 @@ window.V35Planner={render:()=>'<div id="v35root"></div>',draw,version:'early-acc
 const original=window.renderToday;
 if(typeof original==='function'){window.renderToday=function(){return window.V35Planner.render()+'<details style="margin-top:15px"><summary>Previous Today dashboard</summary>'+original()+'</details>'}}
 const bind=window.bindView;
-if(typeof bind==='function'){window.bindView=function(){bind();if(window.state?.route==='today')draw()}}
+if(typeof bind==='function'){window.bindView=function(){bind();if(typeof state!=='undefined'&&state.route==='today')draw()}}
 })();
