@@ -72,7 +72,8 @@ function isDone(a){return String(a.status).toLowerCase()==='done';}
 function priorityClass(p){return String(p||'').toLowerCase();}
 function recurrenceLabel(a){if(String(a.repeats).toLowerCase()!=='yes')return'';return `${a.repeatPattern||'Repeats'}${Number(a.repeatEvery||1)>1?' · every '+a.repeatEvery:''}`;}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),2600);}
-function busy(promise,msg='Saved'){return promise.then(async r=>{toast(msg);await refresh();return r}).catch(e=>{toast(e.message);throw e});}
+function releaseSavingButtons(){document.querySelectorAll('form[data-saving="1"]').forEach(form=>{form.dataset.saving='0';const b=form.querySelector('button[type="submit"],button:not([type])');if(b){b.disabled=false;b.textContent=b.dataset.originalSaveLabel||'Save';delete b.dataset.originalSaveLabel;}});}
+function busy(promise,msg='Saved'){return promise.then(async r=>{toast(msg);await refresh();return r}).catch(e=>{toast(e.message);throw e}).finally(releaseSavingButtons);}
 
 function dueRoutineOn(r,d){
   if(String(r.scheduled||'Yes').toLowerCase()==='no')return false;
@@ -128,18 +129,46 @@ function render(){
 
 function renderToday(){
   const actions=(state.data.actions||[]),open=actions.filter(a=>!isDone(a)),today=todayIso(),due=open.filter(a=>a.dueDate===today),over=open.filter(a=>a.dueDate&&a.dueDate<today),routines=routinesForDate(new Date());
-  const priority=[...over,...due,...open.filter(a=>!a.dueDate||a.dueDate>today)].filter((a,i,arr)=>arr.findIndex(x=>x.row===a.row)===i).slice(0,4);
+  const priority=[...over.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)),...due,...open.filter(a=>!a.dueDate||a.dueDate>today).slice(0,4)].filter((a,i,arr)=>arr.findIndex(x=>String(x.actionId||x.row)===String(a.actionId||a.row))===i);
+  const repeatPreview=upcomingRepeatPreview(open,today,90);
   const soon=open.filter(a=>a.dueDate&&a.dueDate>today&&a.dueDate<=iso(addDays(new Date(),7))).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,5);
   return `<div class="kpis">${kpi('OPEN ACTIONS',open.length,'Not yet done')}${kpi('DUE TODAY',due.length,'Actions due today')}${kpi('OVERDUE',over.length,'Needs attention')}${kpi('ROUTINES TODAY',routines.filter(r=>!r.done).length,'Self-management cadence')}</div>
-    ${section('Priority Actions','Overdue and due-today items first.',priority.length?actionRows(priority):empty('Nothing urgent right now.'),'<button class="link-btn" data-route="actions">View all →</button>')}
+    ${section('Priority Actions','Overdue and due-today items first.',priority.length?actionRows(priority,true):empty('Nothing urgent right now.'),'<button class="link-btn" data-route="actions">View all →</button>')}
     ${section('Quick Capture','Get it out of your head before your brain starts a side quest.',`<div class="quick"><input id="quickInput" class="field" placeholder="New action, idea, follow-up…"><button id="quickBtn" class="btn primary">Capture</button></div>`)}
     ${section("Today's Routines",'Repeating tasks from the Self Management Plan.',routineRows(routines),'<button class="link-btn" data-route="routines">All routines →</button>')}
-    ${section('Coming Up','Next seven days.',soon.length?actionRows(soon):empty('No dated actions in the next seven days.'))}`;
+    ${section('Coming Up','Next seven days.',soon.length?actionRows(soon):empty('No dated actions in the next seven days.'))}
+    ${section('Recurring Preview','Next 90 days · planned dates only; future actions are created after completing the current occurrence.',repeatPreview.length?repeatPreview.map(x=>`<div class="repeat-preview-row"><div><strong>${esc(x.task)}</strong><div class="meta"><span>↻ ${esc(x.pattern)}</span><span>${esc(x.priority)}</span></div></div><span class="repeat-date">${esc(fmtDate(x.date,{month:'short',day:'numeric',year:'numeric'}))}</span></div>`).join(''):empty('No additional recurring dates in the next 90 days.'))}`;
+}
+function futureRepeatDate(isoDate,pattern,every){
+  const d=parseIso(isoDate);if(!d)return '';
+  const n=Math.max(1,Math.floor(Number(every)||1)),p=String(pattern||'');
+  if(p==='Daily')d.setDate(d.getDate()+n);
+  else if(p==='Weekdays'){let left=n;while(left){d.setDate(d.getDate()+1);if(d.getDay()!==0&&d.getDay()!==6)left--;}}
+  else if(p==='Weekly')d.setDate(d.getDate()+7*n);
+  else if(p==='Monthly'||p==='Quarterly'||p==='Annually'){
+    const months=n*(p==='Monthly'?1:p==='Quarterly'?3:12),day=d.getDate();
+    d.setDate(1);d.setMonth(d.getMonth()+months);
+    const last=new Date(d.getFullYear(),d.getMonth()+1,0,12).getDate();
+    d.setDate(Math.min(day,last));
+  }else return '';
+  return iso(d);
+}
+function upcomingRepeatPreview(open,today,horizonDays){
+  const until=iso(addDays(new Date(),horizonDays)),rows=[];
+  open.filter(a=>String(a.repeats).toLowerCase()==='yes'&&a.dueDate).forEach(a=>{
+    let next=a.dueDate;
+    for(let i=0;i<100;i++){
+      next=futureRepeatDate(next,a.repeatPattern,a.repeatEvery);
+      if(!next||next>until||a.repeatEnd&&next>a.repeatEnd)break;
+      if(next>today)rows.push({task:a.task,priority:a.priority,date:next,pattern:a.repeatPattern||'Repeat'});
+    }
+  });
+  return rows.sort((a,b)=>a.date.localeCompare(b.date)).slice(0,25);
 }
 function kpi(label,value,sub){return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;}
 function section(title,sub,body,extra=''){return `<div class="card"><div class="card-head"><div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div>${extra}</div><div class="card-body">${body}</div></div>`;}
 function empty(t){return `<div class="empty">${esc(t)}</div>`;}
-function actionRows(list){return list.map(a=>`<div class="action-row"><button class="check" data-complete-id="${esc(a.actionId||a.row)}" aria-label="Complete"></button><div class="action-main"><strong>${esc(a.task)}</strong><div class="meta"><span class="pill ${priorityClass(a.priority)}">${esc(a.priority)}</span>${a.category?`<span>${esc(a.category)}</span>`:''}${a.dueDate?`<span>${esc(fmtDate(a.dueDate))}</span>`:''}${recurrenceLabel(a)?`<span>↻ ${esc(recurrenceLabel(a))}</span>`:''}${a.goalId?`<span class="goal-link">◎ ${esc(goalName(a.goalId)||a.goalId)}</span>`:''}${a.estimatedHours?`<span>Est ${esc(fmtHours(a.estimatedHours))}</span>`:''}${hoursFor({actionId:a.actionId})?`<span>${esc(fmtHours(hoursFor({actionId:a.actionId})))} actual</span>`:''}</div></div><div class="row-actions"><button class="link-btn" data-edit-id="${esc(a.actionId||a.row)}">Edit</button></div></div>`).join('');}
+function actionRows(list,highlightOverdue=false){return list.map(a=>`<div class="action-row${highlightOverdue&&!isDone(a)&&a.dueDate&&a.dueDate<todayIso()?' today-overdue':''}"><button class="check" data-complete-id="${esc(a.actionId||a.row)}" aria-label="Complete"></button><div class="action-main"><strong>${esc(a.task)}</strong><div class="meta"><span class="pill ${priorityClass(a.priority)}">${esc(a.priority)}</span>${a.category?`<span>${esc(a.category)}</span>`:''}${a.dueDate?`<span>${esc(fmtDate(a.dueDate))}</span>`:''}${recurrenceLabel(a)?`<span>↻ ${esc(recurrenceLabel(a))}</span>`:''}${a.goalId?`<span class="goal-link">◎ ${esc(goalName(a.goalId)||a.goalId)}</span>`:''}${a.estimatedHours?`<span>Est ${esc(fmtHours(a.estimatedHours))}</span>`:''}${hoursFor({actionId:a.actionId})?`<span>${esc(fmtHours(hoursFor({actionId:a.actionId})))} actual</span>`:''}</div></div><div class="row-actions"><button class="link-btn" data-edit-id="${esc(a.actionId||a.row)}">Edit</button></div></div>`).join('');}
 function routineRows(list){if(!list.length)return empty('No routines due.');return list.map(r=>`<div class="action-row"><button class="check" ${r.done?'disabled':''} data-routine-id="${esc(r.id)}" data-routine-date="${r.dueDate}" aria-label="Complete routine"></button><div class="action-main"><strong>${esc(r.task)}</strong><div class="meta"><span class="pill">${esc(r.frequency)}</span><span>${r.done?'Completed':'Due'}</span></div></div><div class="row-actions">${r.done?'✓':`<button class="btn" data-routine-id="${esc(r.id)}" data-routine-date="${r.dueDate}">Complete</button>`}</div></div>`).join('');}
 
 function renderActions(){
@@ -218,7 +247,20 @@ function filterNotes(){const q=($('#notesSearch')?.value||'').toLowerCase();$$('
 
 function openSheet(title,html){$('#sheetTitle').textContent=title;$('#sheetBody').innerHTML=html;$('.sheet-panel')?.classList.remove('wide');$('#sheet').classList.remove('hidden');$('#sheet').setAttribute('aria-hidden','false');bindSheet();}
 function closeSheet(){$('#sheet').classList.add('hidden');$('#sheet').setAttribute('aria-hidden','true');}
-function bindSheet(){$$('[data-close-sheet]').forEach(x=>x.onclick=closeSheet);$$('[data-more-route]').forEach(b=>b.onclick=()=>{closeSheet();setRoute(b.dataset.moreRoute)});}
+function bindSheet(){
+  $('[data-close-sheet]').forEach(x=>x.onclick=closeSheet);
+  $('[data-more-route]').forEach(b=>b.onclick=()=>{closeSheet();setRoute(b.dataset.moreRoute)});
+  $('#sheetBody form').forEach(form=>{
+    if(form.dataset.savingHook)return;
+    form.dataset.savingHook='1';
+    form.addEventListener('submit',event=>{
+      if(form.dataset.saving==='1'){event.preventDefault();event.stopImmediatePropagation();return;}
+      form.dataset.saving='1';
+      const button=form.querySelector('button[type="submit"],button:not([type])');
+      if(button){button.dataset.originalSaveLabel=button.textContent;button.textContent=/save|capture|complete/i.test(button.textContent)?'Saving…':'Working…';button.disabled=true;}
+    },true);
+  });
+}
 
 function openAction(a={}){const edit=!!(a.actionId||a.row);openSheet(edit?'Edit Action':'New Action',`<form id="actionForm"><div class="form-grid"><div class="form-group full"><label>Action</label><input class="field" name="task" required value="${esc(a.task||'')}"></div><div class="form-group"><label>Category</label><input class="field" name="category" value="${esc(a.category||'')}"></div><div class="form-group"><label>Priority</label><select name="priority">${state.data.app.priorities.map(x=>`<option ${a.priority===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div><div class="form-group"><label>Due date</label><input class="field" type="date" name="dueDate" value="${esc(a.dueDate||'')}"></div><div class="form-group"><label>Status</label><select name="status">${state.data.app.statuses.map(x=>`<option ${a.status===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div><div class="form-group"><label>Goal <span class="muted">(optional)</span></label><select name="goalId">${goalOptions(a.goalId||'')}</select></div><div class="form-group"><label>Estimated Hours <span class="muted">(optional)</span></label><input class="field" type="number" min="0" step="0.25" name="estimatedHours" value="${esc(a.estimatedHours||'')}"></div><div class="form-group full"><label>Notes</label><textarea name="notes">${esc(a.notes||'')}</textarea></div><div class="form-group"><label>Repeats</label><select name="repeats"><option ${a.repeats!=='Yes'?'selected':''}>No</option><option ${a.repeats==='Yes'?'selected':''}>Yes</option></select></div><div class="form-group"><label>Pattern</label><select name="repeatPattern">${state.data.app.repeatPatterns.map(x=>`<option ${a.repeatPattern===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div><div class="form-group"><label>Repeat every</label><input class="field" type="number" min="1" name="repeatEvery" value="${esc(a.repeatEvery||1)}"></div><div class="form-group"><label>Repeat end</label><input class="field" type="date" name="repeatEnd" value="${esc(a.repeatEnd||'')}"></div></div><div class="sheet-actions"><button type="button" class="btn" data-close-sheet>Cancel</button><button class="btn primary">Save</button></div></form>`);bindSheet();$('#actionForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.target),payload=Object.fromEntries(f.entries());if(edit){payload.actionId=a.actionId||'';payload.row=a.row||'';}busy(bridge.call('saveAction',payload),'Action saved').then(closeSheet)};}
 
