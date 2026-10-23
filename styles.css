@@ -50,3 +50,22 @@
 @media(max-width:1100px){.plan-week-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:800px){.plan-head{margin:0 0 12px;padding:15px;align-items:flex-start;flex-direction:column}.plan-head h2{font-size:19px}.plan-head .inline-actions{width:100%}.plan-head .btn{flex:1}.plan-now-grid{gap:8px}.plan-now-tile{padding:12px;min-height:98px}.plan-now-tile strong{font-size:13px}.plan-now-tile .meta{font-size:10px}.plan-toolbar{align-items:stretch}.plan-toolbar .seg{width:100%}.plan-toolbar .seg button{flex:1}.plan-toolbar .cal-nav{justify-content:space-between;width:100%}.plan-week-grid{grid-template-columns:1fr 1fr}.plan-week-day{min-height:105px}.plan-slot{grid-template-columns:73px minmax(0,1fr);min-height:60px;gap:6px}.plan-hour{font-size:10px}.plan-block{padding:9px}.plan-calendar .card-body{padding:12px}.plan-backlog-row .meta{gap:5px}.plan-needs>.card-head{align-items:flex-start;gap:6px}.plan-needs>.card-head .btn{padding:8px}.plan-month-day{min-height:48px;padding:6px}.plan-month-day span{font-size:9px}}
 @media(max-width:380px){.plan-week-grid{grid-template-columns:1fr}.plan-now-grid{grid-template-columns:1fr}}
+
+
+/* V3.5.1 — duration-aware day-view blocks */
+.plan-day{--plan-slot-height:58px}
+.plan-day .plan-slot{height:var(--plan-slot-height);min-height:0}
+.plan-day .plan-slot-work{position:relative;display:block;overflow:visible;padding:0}
+.plan-day .plan-slot-work>.plan-block{
+  position:absolute;
+  top:calc(4px + var(--plan-start-offset,0)*var(--plan-slot-height));
+  left:0;
+  width:100%;
+  height:calc(var(--plan-length,1)*var(--plan-slot-height) - 8px);
+  z-index:2;
+  overflow:hidden;
+}
+.plan-day .plan-block.plan-compact{padding:2px 6px;border-radius:5px}
+.plan-day .plan-block.plan-compact strong{line-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plan-day .plan-block.plan-compact small{display:none}
+@media(max-width:800px){.plan-day{--plan-slot-height:60px}}
