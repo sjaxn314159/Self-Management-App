@@ -17,7 +17,12 @@ function formFields(v){
 }
 function recurrenceFromForm(f,date){
   const names=[...f.querySelectorAll('input[name="day"]:checked')].map(x=>Number(x.value));
-  return E.recurrence({frequency:f.elements.frequency.value,every:Number(f.elements.every.value),weekdays:names,until:f.elements.until.value},date);
+  const frequency=f.elements.frequency.value;
+  if(["weekly","biweekly"].includes(frequency)){
+    if(!names.length)throw Error("Select at least one weekday for the repeating meeting.");
+    if(!names.includes(chosenDay(date)))throw Error("The first meeting date must be one of the selected weekdays.");
+  }
+  return E.recurrence({frequency,every:Number(f.elements.every.value),weekdays:names,until:f.elements.until.value},date);
 }
 function candidateIsOverlapping(a,b){
   if(a.date!==b.date)return false;
@@ -26,21 +31,23 @@ function candidateIsOverlapping(a,b){
   return as<be&&bs<ae;
 }
 function parseTime(s){const [h,m]=String(s).split(":").map(Number);return h*60+m;}
-function checkFixedConflicts(updated,parentId,selectedOrigin){
-  // Detect conflicts for 90 calendar days, including weekly repeats and the
-  // scheduled action blocks already present. Auto-schedule will avoid these.
+function checkFixedConflicts(updated,parentId){
+  // Expand stored series directly, so conflicts are seen even if the user
+  // is editing a calendar month beyond the currently cached window.
   const start=updated.date>=todayIso()?updated.date:todayIso();
   const end=E.advance(start,90);
   const candidates=E.expand([updated],start,end);
-  const existing=plan().blocks().filter(x=>x.noteId!==parentId&&x.date>=start&&x.date<=end);
-  const ownClash=[];
+  const stored=(state.data.notes||[]).filter(n=>plan().isPlannerNote(n)&&n.noteId!==parentId).map(n=>{
+    try{return {...JSON.parse(n.note||"{}"),noteId:n.noteId};}catch(e){return null;}
+  }).filter(Boolean);
+  const openActions=new Set((state.data.actions||[]).filter(a=>String(a.status).toLowerCase()!=="done").map(a=>String(a.actionId||a.row)));
+  const existing=E.expand(stored,start,end).filter(x=>x.type!=="action"||openActions.has(String(x.actionId)));
   for(let i=0;i<candidates.length;i++){
     const next=candidates[i];
     const hit=existing.find(x=>candidateIsOverlapping(next,x));
     if(hit)throw Error("Recurring time conflict on "+next.date+" at "+next.start+". Move the existing block before saving the series.");
-    if(candidates.slice(0,i).some(x=>candidateIsOverlapping(next,x)))ownClash.push(next.date);
+    if(candidates.slice(0,i).some(x=>candidateIsOverlapping(next,x)))throw Error("Repeating occurrences overlap after an exception on "+next.date+".");
   }
-  if(ownClash.length)throw Error("Repeating occurrences overlap after an exception on "+ownClash[0]+".");
 }
 function editor(b){
   b=b||{};const editing=!!b.noteId,record=editing?action(b.noteId):null,series=!!(record&&record.recurrence),kind=b.type==="prep"?"prep":"meeting";
@@ -59,6 +66,12 @@ function editor(b){
     document.getElementById("atlasRepeatHelp").textContent=series&&one?"This occurrence changes only. The repeating pattern stays the same.":series&&scope&&scope.value==="future"?"Changes to the repeat pattern take effect from the selected occurrence onward.":isRepeat?"Meetings and protected prep reserve future times. No duplicate actions are created.":"This is a single protected time block.";
   };
   repeat.onchange=adjust;f.elements.frequency.onchange=adjust;
+  f.elements.date.addEventListener("change",()=>{
+    if(!series&&["weekly","biweekly"].includes(f.elements.frequency.value)){
+      const selections=[...f.querySelectorAll('input[name="day"]:checked')];
+      if(selections.length===1){selections[0].checked=false;const next=f.querySelector('input[name="day"][value="'+chosenDay(f.elements.date.value)+'"]');if(next)next.checked=true;}
+    }
+  });
   if(scope)scope.onchange=()=>{
     if(scope.value==="all"&&record)f.elements.date.value=record.date;
     else f.elements.date.value=start;
