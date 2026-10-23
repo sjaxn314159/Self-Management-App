@@ -100,6 +100,46 @@ function actionById(id){return (state.data.actions||[]).find(a=>String(a.actionI
 function projectById(id){return (state.data.projects||[]).find(p=>String(p.projectId)===String(id))||null;}
 function projectName(id){const p=projectById(id);return p?p.projectName:'';}
 
+function canManage37(feature){return !!(state.data?.app?.capabilities?.[feature]);}
+function projectOptions37(selected=''){return '<option value="">— No project —</option>'+(state.data.projects||[]).map(p=>'<option value="'+esc(p.projectId)+'" '+(String(selected)===String(p.projectId)?'selected':'')+'>'+esc(p.projectName)+'</option>').join('');}
+function backendNotice37(feature){return canManage37(feature)?'':'<p class="backend-notice37">Deploy the V3.7 Apps Script backend to enable this feature. Existing data is unchanged.</p>';}
+function actionDeleteButton37(a){
+  if(!canManage37('deleteActions'))return '';
+  return String(a.source)==='Project'?'<button class="link-btn danger-link37" disabled title="Synchronized project actions must be deleted in their project workbook.">Delete</button>':
+    '<button class="link-btn danger-link37" data-delete-action="'+esc(a.actionId||'')+'">Delete</button>';
+}
+let deleting37=false;
+async function deleteAction37(id){
+  if(deleting37||!canManage37('deleteActions'))return;
+  const a=actionById(id);if(!a)return toast('Action no longer exists.');
+  if(a.source==='Project')return toast('Delete synchronized actions from the project workbook.');
+  if(!a.actionId)return toast('Action ID is missing. Refresh and try again.');
+  if(!confirm('Delete action "'+a.task+'"?\n\nIt will disappear from Atlas Command and the calendar. Historical time logs and the original row remain in Google Sheets.'))return;
+  deleting37=true;
+  try{
+    await bridge.call('deleteAction',a.actionId);
+    const fresh=await bridge.call('getBootstrap');
+    if((fresh.actions||[]).some(x=>String(x.actionId)===String(a.actionId)))throw new Error('Deletion could not be verified. Refresh before retrying.');
+    state.data=fresh;render();closeSheet();toast('Action deleted');
+  }catch(e){toast(e.message||String(e));}
+  finally{deleting37=false;}
+}
+async function deleteProject37(id){
+  if(deleting37||!canManage37('deleteProjects'))return;
+  const p=projectById(id);if(!p)return toast('Project no longer exists.');
+  const count=(state.data.actions||[]).filter(a=>String(a.projectId)===String(id)).length;
+  if(!confirm('Delete project "'+p.projectName+'"?\n\nThe project disappears from Atlas Command. Its separate Google Drive workbook is preserved. '+count+' linked action(s) will remain as unassigned history. This can be reversed in the Projects sheet.'))return;
+  deleting37=true;
+  try{
+    await bridge.call('deleteProject',p.projectId);
+    const fresh=await bridge.call('getBootstrap');
+    if((fresh.projects||[]).some(x=>String(x.projectId)===String(id)))throw new Error('Project deletion could not be verified. Refresh before retrying.');
+    state.data=fresh;render();closeSheet();toast('Project removed; workbook preserved');
+  }catch(e){toast(e.message||String(e));}
+  finally{deleting37=false;}
+}
+
+
 function setRoute(route){state.route=route;render();window.scrollTo(0,0);}
 function routeMeta(){
   const m={today:['COMMAND CENTER','Today'],actions:['EXECUTION','Action Items'],calendar:['TIME HORIZON','Calendar'],goals:['OUTCOMES','Goals'],time:['EFFORT','Time'],projects:['PORTFOLIO','Projects'],notes:['REFERENCE','Notes'],routines:['RHYTHM','Routines'],daily:['SYSTEM OF RECORD','Daily Log'],brag:['WINS','Brag Sheet']};
