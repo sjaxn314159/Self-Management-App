@@ -132,7 +132,7 @@ function renderToday(){
   const priority=[...over.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)),...due,...open.filter(a=>!a.dueDate||a.dueDate>today).slice(0,4)].filter((a,i,arr)=>arr.findIndex(x=>String(x.actionId||x.row)===String(a.actionId||a.row))===i);
   const repeatPreview=upcomingRepeatPreview(open,today,90);
   const soon=open.filter(a=>a.dueDate&&a.dueDate>today&&a.dueDate<=iso(addDays(new Date(),7))).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,5);
-  return `<div class="kpis">${kpi('OPEN ACTIONS',open.length,'Not yet done')}${kpi('DUE TODAY',due.length,'Actions due today')}${kpi('OVERDUE',over.length,'Needs attention')}${kpi('ROUTINES TODAY',routines.filter(r=>!r.done).length,'Self-management cadence')}</div>
+  return `${window.plan35.todayPanel()}<div class="kpis">${kpi('OPEN ACTIONS',open.length,'Not yet done')}${kpi('DUE TODAY',due.length,'Actions due today')}${kpi('OVERDUE',over.length,'Needs attention')}${kpi('ROUTINES TODAY',routines.filter(r=>!r.done).length,'Self-management cadence')}</div>
     ${section('Priority Actions','Overdue and due-today items first.',priority.length?actionRows(priority,true):empty('Nothing urgent right now.'),'<button class="link-btn" data-route="actions">View all →</button>')}
     ${section('Quick Capture','Get it out of your head before your brain starts a side quest.',`<div class="quick"><input id="quickInput" class="field" placeholder="New action, idea, follow-up…"><button id="quickBtn" class="btn primary">Capture</button></div>`)}
     ${section("Today's Routines",'Repeating tasks from the Self Management Plan.',routineRows(routines),'<button class="link-btn" data-route="routines">All routines →</button>')}
@@ -179,6 +179,7 @@ function renderActions(){
 function actionTableRows(rows){return rows.map(a=>`<tr data-search="${esc((a.task+' '+a.notes+' '+a.category+' '+goalName(a.goalId)).toLowerCase())}" data-status="${esc(a.status)}" data-priority="${esc(a.priority)}"><td class="task-cell"><strong>${esc(a.task)}</strong><span>${esc(a.notes||a.category||'')}${a.goalId?' · Goal: '+esc(goalName(a.goalId)||a.goalId):''}${a.estimatedHours?' · Est '+esc(fmtHours(a.estimatedHours)):''}${hoursFor({actionId:a.actionId})?' · '+esc(fmtHours(hoursFor({actionId:a.actionId})))+' actual':''}</span></td><td><span class="pill ${priorityClass(a.priority)}">${esc(a.priority)}</span></td><td>${a.dueDate?esc(fmtDate(a.dueDate)):'—'}</td><td>${esc(a.status)}</td><td><button class="link-btn" data-edit-id="${esc(a.actionId||a.row)}">Edit</button></td></tr>`).join('');}
 
 function renderCalendar(){
+  return window.plan35.calendarPanel();
   const mode=state.calendarMode, title=calendarTitle();
   return `<div class="card"><div class="card-head calendar-toolbar"><div><h3>${esc(title)}</h3><p>Actions + recurring routines</p></div><div class="seg"><button data-cal-mode="month" class="${mode==='month'?'active':''}">Month</button><button data-cal-mode="week" class="${mode==='week'?'active':''}">Week</button><button data-cal-mode="day" class="${mode==='day'?'active':''}">Day</button></div><div class="cal-nav"><button class="btn" data-cal-nav="-1">‹</button><button class="btn" data-cal-today>Today</button><button class="btn" data-cal-nav="1">›</button></div></div><div class="card-body">${mode==='month'?renderMonth():mode==='week'?renderWeek():renderDay()}</div></div>`;
 }
@@ -199,7 +200,7 @@ function renderGoals(){
 function linkedRow(title,meta=''){return `<div class="log-row"><strong>${esc(title)}</strong>${meta?`<div class="meta">${meta}</div>`:''}</div>`;}
 
 function renderNotes(){
-  const rows=(state.data.notes||[]).slice();
+  const rows=(state.data.notes||[]).filter(n=>!window.plan35.isPlannerNote(n)).slice();
   return `<div class="card"><div class="card-head"><div><h3>Notes</h3><p>Just notes. No workflow required.</p></div><button class="btn primary" data-new-note>+ New Note</button></div>
     <div class="card-body"><div class="notes-toolbar"><input class="field" id="notesSearch" placeholder="Search notes…"></div>
     <div id="notesList">${rows.length?rows.map(n=>`<article class="note-card" data-note-search="${esc(((n.title||'')+' '+(n.note||'')+' '+(n.tags||'')+' '+(n.projectId||'')+' '+(n.goalId||'')).toLowerCase())}"><div class="note-card-head"><div><strong>${n.pinned==='Yes'?'📌 ':''}${esc(n.title||fmtDate(n.date)||'Note')}</strong><div class="meta"><span>${esc(fmtDate(n.date))}</span>${n.tags?`<span>${esc(n.tags)}</span>`:''}${n.projectId?`<span>${esc(n.projectId)}</span>`:''}${n.goalId?`<span>◎ ${esc(goalName(n.goalId)||n.goalId)}</span>`:''}</div></div><button class="link-btn" data-edit-note="${esc(n.noteId)}">Edit</button></div><div class="note-text">${esc(n.note).replace(/\n/g,'<br>')}</div></article>`).join(''):empty('No notes yet.')}</div></div></div>`;
