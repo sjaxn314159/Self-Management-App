@@ -132,7 +132,7 @@ function renderToday(){
   const priority=[...over.sort((a,b)=>a.dueDate.localeCompare(b.dueDate)),...due,...open.filter(a=>!a.dueDate||a.dueDate>today).slice(0,4)].filter((a,i,arr)=>arr.findIndex(x=>String(x.actionId||x.row)===String(a.actionId||a.row))===i);
   const repeatPreview=upcomingRepeatPreview(open,today,90);
   const soon=open.filter(a=>a.dueDate&&a.dueDate>today&&a.dueDate<=iso(addDays(new Date(),7))).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,5);
-  return `${window.plan35.todayPanel()}<div class="kpis">${kpi('OPEN ACTIONS',open.length,'Not yet done')}${kpi('DUE TODAY',due.length,'Actions due today')}${kpi('OVERDUE',over.length,'Needs attention')}${kpi('ROUTINES TODAY',routines.filter(r=>!r.done).length,'Self-management cadence')}</div>
+  return `${window.plan35.todayPanel()}<div class="kpis">${kpi('OPEN ACTIONS',open.length,'Not yet done')}${kpi('DUE TODAY',due.length,'Actions due today')}${kpi('OVERDUE',over.length,'Needs attention')}${kpi('ROUTINES TODAY',routines.filter(r=>!r.done).length,'Personal operations rhythm')}</div>
     ${section('Priority Actions','Overdue and due-today items first.',priority.length?actionRows(priority,true):empty('Nothing urgent right now.'),'<button class="link-btn" data-route="actions">View all →</button>')}
     ${section('Quick Capture','Get it out of your head before your brain starts a side quest.',`<div class="quick"><input id="quickInput" class="field" placeholder="New action, idea, follow-up…"><button id="quickBtn" class="btn primary">Capture</button></div>`)}
     ${section("Today's Routines",'Repeating tasks from the Self Management Plan.',routineRows(routines),'<button class="link-btn" data-route="routines">All routines →</button>')}
