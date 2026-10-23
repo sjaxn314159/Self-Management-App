@@ -244,12 +244,12 @@ function onClick(e){
   const el=e.target.closest("[data-plan-mode],[data-plan-offset],[data-plan-today],[data-plan-new],[data-plan-action],[data-plan-action-edit],[data-plan-auto],[data-plan-edit],[data-plan-review],[data-plan-open-date],[data-plan-new-date]");
   if(!el)return;
   e.preventDefault();e.stopPropagation();
+  if(el.dataset.planActionEdit){const a=getAction(el.dataset.planActionEdit);if(a)openAction(a);return;}
   if(el.dataset.planMode){state.calendarMode=el.dataset.planMode;render();return;}
   if(el.dataset.planOffset){const n=Number(el.dataset.planOffset);state.cursor=state.calendarMode==="month"?addMonths(state.cursor,n):addDays(state.cursor,n*(state.calendarMode==="week"?7:1));render();return;}
   if(el.hasAttribute("data-plan-today")){state.cursor=new Date();render();return;}
   if(el.dataset.planNew){blockForm({type:el.dataset.planNew,date:iso(state.cursor)});return;}
   if(el.dataset.planNewDate){blockForm({type:"action",date:el.dataset.planNewDate});return;}
-  if(el.dataset.planActionEdit){const a=getAction(el.dataset.planActionEdit);if(a)openAction(a);return;}
   if(el.dataset.planAction){const a=getAction(el.dataset.planAction);blockForm({type:"action",actionId:actionId(a),date:iso(state.cursor),hours:Number(a.estimatedHours)||1});return;}
   if(el.hasAttribute("data-plan-auto")){autoSchedule();return;}
   if(el.dataset.planEdit){const b=blocks().find(x=>x.noteId===el.dataset.planEdit&&(!el.dataset.planOccurrence||x.occurrenceDate===el.dataset.planOccurrence));if(b)blockForm(b);return;}
