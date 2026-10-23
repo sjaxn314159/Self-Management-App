@@ -61,3 +61,22 @@ test("unscheduled queue preserves actions and original due date",()=>{
   assert.equal(plan.backlog().length,0);
   assert.equal(state.data.actions[0].dueDate,d);
 });
+
+test("60-minute day-view block occupies two 30-minute rows",()=>{
+  const {plan,state}=launch(),d=nextMonday();
+  state.data.notes=[note(d,"08:00",1)];
+  const day=plan.renderDay(parseIso(d));
+  assert.match(day,/--plan-length:2;--plan-start-offset:0/);
+  assert.match(day,/8:00 AM/);
+  assert.match(day,/data-plan-time="08:30"/);
+});
+test("90-minute day-view block occupies three rows",()=>{
+  const {plan,state}=launch(),d=nextMonday();
+  state.data.notes=[note(d,"09:00",1.5)];
+  assert.match(plan.renderDay(parseIso(d)),/--plan-length:3;--plan-start-offset:0/);
+});
+test("quarter-hour starts and durations are drawn at fractional rows",()=>{
+  const {plan,state}=launch(),d=nextMonday();
+  state.data.notes=[note(d,"09:15",.25)];
+  assert.match(plan.renderDay(parseIso(d)),/plan-compact" style="--plan-length:0\.5;--plan-start-offset:0\.5"/);
+});
