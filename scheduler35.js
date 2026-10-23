@@ -18,20 +18,33 @@ function actionId(a){return String(a.actionId||a.row);}
 function getAction(id){return (state.data.actions||[]).find(a=>actionId(a)===String(id));}
 function isOpen(a){return a&&String(a.status).toLowerCase()!=="done";}
 function dateShift(ds,n){return iso(addDays(parseIso(ds),n));}
+let cachedBlocks=null,cachedData=null,cachedCursor="",cachedDate="";
 function blocks(){
-  return (state.data.notes||[]).filter(n=>String(n.tags||"").split(/[\s,]+/).includes(TAG)).map(n=>{
+  const current=iso(state.cursor),now=today(),notes=state.data.notes;
+  if(cachedBlocks&&cachedData===notes&&cachedCursor===current&&cachedDate===now)return cachedBlocks;
+  const raw=(notes||[]).filter(isPlannerNote).map(n=>{
     try{
       const v=JSON.parse(n.note||"{}");
       if(!v.date||!v.start||!(Number(v.hours)>0)||!["action","meeting","prep"].includes(v.type))return null;
       return Object.assign({},v,{noteId:n.noteId,hours:Number(v.hours),locked:v.type!=="action",uid:v.uid||n.noteId});
     }catch(e){return null;}
   }).filter(Boolean).filter(b=>b.type!=="action"||isOpen(getAction(b.actionId)));
+  const from=[dateShift(now,-90),dateShift(current,-65)].sort()[0];
+  const to=[dateShift(now,130),dateShift(current,65)].sort().pop();
+  cachedBlocks=window.AtlasRecurrence36?window.AtlasRecurrence36.expand(raw,from,to):raw;
+  cachedData=notes;cachedCursor=current;cachedDate=now;
+  return cachedBlocks;
+}
+function parentBlock(id){
+  const n=(state.data.notes||[]).find(x=>x.noteId===id&&isPlannerNote(x));
+  if(!n)return null;
+  try{return Object.assign({},JSON.parse(n.note||"{}"),{noteId:n.noteId});}catch(e){return null;}
 }
 function isPlannerNote(n){return String(n.tags||"").split(/[\s,]+/).includes(TAG);}
 function label(b){return b.type==="action"?(getAction(b.actionId)||{}).task||b.title||"Missing action":b.title;}
 function desc(b){return (b.type==="meeting"?"Meeting":b.type==="prep"?"Protected prep":"Action")+" · "+(Number(b.hours)||1)+" hr";}
 function occupied(b){return [min(b.start),min(b.start)+Math.round(b.hours*60)];}
-function overlaps(a,b){if(a.date!==b.date||a.noteId===b.noteId)return false;const x=occupied(a),y=occupied(b);return x[0]<y[1]&&y[0]<x[1];}
+function overlaps(a,b){if(a.date!==b.date||(a.noteId===b.noteId&&(a.occurrenceDate||a.date)===(b.occurrenceDate||b.date)))return false;const x=occupied(a),y=occupied(b);return x[0]<y[1]&&y[0]<x[1];}
 function conflicts(b,all){return (all||blocks()).filter(x=>overlaps(b,x));}
 function validHours(hh){const n=Number(hh);if(!isFinite(n)||n<.25||n>8||Math.round(n*4)!==n*4)throw Error("Duration must be 0.25–8 hours in 15-minute increments.");return n;}
 function validateBlock(b){
@@ -58,7 +71,7 @@ function blockHtml(b,short,dayView=false){
   const durationMinutes=Math.round(Number(b.hours)*60);
   const inlineStyle=dayView?' style="--plan-length:'+(durationMinutes/STEP)+';--plan-start-offset:'+((min(b.start)%STEP)/STEP)+'"':'';
   const compact=dayView&&durationMinutes<=15?' plan-compact':'';
-  return '<button class="plan-block '+h(kind)+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'" data-plan-edit="'+h(b.noteId)+'" title="Tap to edit; drag to move"><strong>'+h(pretty(min(b.start)))+' · '+h(label(b))+'</strong><small>'+h(desc(b))+(kind==="action"&&expired?" · REVIEW":"")+'</small></button>';
+  return '<button class="plan-block '+h(kind)+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'" data-plan-edit="'+h(b.noteId)+'" data-plan-occurrence="'+h(b.occurrenceDate||'')+'" title="Tap to edit; drag to move"><strong>'+h(pretty(min(b.start)))+' · '+h(label(b))+'</strong><small>'+h(desc(b))+(b.isRecurring?" · "+h(window.AtlasRecurrence36.ruleSummary(parentBlock(b.noteId))):"")+(kind==="action"&&expired?" · REVIEW":"")+'</small></button>';
 }
 function calControls(){
   return '<div class="plan-toolbar"><div class="seg">'+["day","week","month"].map(m=>'<button data-plan-mode="'+m+'" class="'+(state.calendarMode===m?"active":"")+'">'+m[0].toUpperCase()+m.slice(1)+'</button>').join("")+'</div><div class="cal-nav"><button class="btn" data-plan-offset="-1" aria-label="Previous">‹</button><button class="btn" data-plan-today>Today</button><button class="btn" data-plan-offset="1" aria-label="Next">›</button></div></div>';
@@ -97,7 +110,7 @@ function nowPanel(){
   const current=b.find(x=>min(x.start)<=m&&min(x.start)+x.hours*60>m);
   const next=b.find(x=>min(x.start)>m);
   const missed=b.filter(x=>x.type==="action"&&min(x.start)+x.hours*60<=m);
-  function tile(heading,item){return '<div class="plan-now-tile"><div class="kpi-label">'+heading+'</div>'+(item?'<strong>'+h(label(item))+'</strong><div class="meta">'+h(pretty(min(item.start)))+' · '+h(desc(item))+'</div><button class="link-btn" data-plan-edit="'+h(item.noteId)+'">View block →</button>':'<strong>Nothing scheduled</strong>')+'</div>';}
+  function tile(heading,item){return '<div class="plan-now-tile"><div class="kpi-label">'+heading+'</div>'+(item?'<strong>'+h(label(item))+'</strong><div class="meta">'+h(pretty(min(item.start)))+' · '+h(desc(item))+'</div><button class="link-btn" data-plan-edit="'+h(item.noteId)+'" data-plan-occurrence="'+h(item.occurrenceDate||'')+'">View block →</button>':'<strong>Nothing scheduled</strong>')+'</div>';}
   return '<div class="plan-now-grid">'+tile("NOW",current)+tile("UP NEXT",next)+'</div>'+(missed.length?'<div class="plan-review-strip"><strong>'+missed.length+' finished time block'+(missed.length===1?"":"s")+' need review</strong> '+missed.slice(0,3).map(x=>'<button class="btn" data-plan-review="'+h(x.noteId)+'">Did you finish '+h(label(x))+'?</button>').join("")+'</div>':"");
 }
 function needs(){
@@ -105,7 +118,7 @@ function needs(){
   return '<div class="card plan-needs"><div class="card-head"><div><h3>Needs Scheduling <span class="pill">'+a.length+'</span></h3><p>Open actions due within 30 days (plus overdue and undated). Due dates never change when scheduling.</p></div><button class="btn primary" data-plan-auto>Auto-Schedule</button></div><div class="card-body">'+(items.length?items.map(x=>'<div class="plan-backlog-row"><div><strong>'+h(x.task)+'</strong><div class="meta"><span class="pill '+priorityClass(x.priority)+'">'+h(x.priority)+'</span><span>'+h(x.dueDate?fmtDate(x.dueDate):"No due date")+'</span><span>'+h(Number(x.estimatedHours)||1)+' hr estimate</span></div></div><button class="btn" data-plan-action="'+h(actionId(x))+'">Schedule</button></div>').join("")+(a.length>items.length?'<p class="muted">Showing first 28. Schedule these to reveal more.</p>':""):empty("Everything in the next 30 days has a time slot."))+'</div></div>';
 }
 function top(){
-  return '<div class="plan-head"><div><span class="plan-eyebrow">V3.5 · TIME-BLOCK PLANNER</span><h2>Your next move, not just your due date.</h2></div><div class="inline-actions"><button class="btn" data-plan-new="meeting">+ Meeting</button><button class="btn" data-plan-new="prep">+ Protected prep</button></div></div>';
+  return '<div class="plan-head"><div><span class="plan-eyebrow">ATLAS COMMAND · TIME-BLOCK PLANNER</span><h2>Your next move, not just your due date.</h2></div><div class="inline-actions"><button class="btn" data-plan-new="meeting">+ Meeting</button><button class="btn" data-plan-new="prep">+ Protected prep</button></div></div>';
 }
 function todayPanel(){return top()+nowPanel()+calendar()+needs();}
 function calendarPanel(){return top()+calendar()+needs();}
@@ -125,13 +138,13 @@ function findGap(hours,fromDate,afterMinute,ignoreNotes,additional){
 }
 async function writeBlock(data){
   const b=validateBlock(Object.assign({},data));
-  const payload={noteId:b.noteId||"",date:b.date,title:"Planner · "+(b.type==="action"?(getAction(b.actionId)||{}).task||"Action":b.title),note:JSON.stringify({uid:b.uid||uid(),type:b.type,actionId:b.actionId||"",title:b.title||"",date:b.date,start:b.start,hours:b.hours}),tags:TAG,pinned:"No"};
+  const payload={noteId:b.noteId||"",date:b.date,title:"Planner · "+(b.type==="action"?(getAction(b.actionId)||{}).task||"Action":b.title),note:JSON.stringify({uid:b.uid||uid(),type:b.type,actionId:b.actionId||"",title:b.title||"",date:b.date,start:b.start,hours:b.hours,recurrence:b.recurrence||null}),tags:TAG,pinned:"No"};
   const key=JSON.parse(payload.note).uid;
   await bridge.call("saveNote",payload);
   const fresh=await bridge.call("getBootstrap");
   const saved=(fresh.notes||[]).find(n=>{
     if(!isPlannerNote(n))return false;
-    try{const j=JSON.parse(n.note||"{}");return j.uid===key&&j.date===b.date&&j.start===b.start&&Number(j.hours)===Number(b.hours);}catch(e){return false;}
+    try{const j=JSON.parse(n.note||"{}");return j.uid===key&&j.date===b.date&&j.start===b.start&&Number(j.hours)===Number(b.hours)&&JSON.stringify(j.recurrence||null)===JSON.stringify(b.recurrence||null);}catch(e){return false;}
   });
   if(!saved)throw Error("Block save was not verified. Check the planner before retrying.");
   state.data=fresh;render();
@@ -165,7 +178,9 @@ async function withBusy(job){
   try{await job();}catch(e){toast(e.message||String(e));}finally{writing=false;releaseSavingButtons();}
 }
 function blockForm(b){
-  b=b||{};const editing=!!b.noteId;
+  b=b||{};
+  if(window.Atlas36UI&&b.type!=="action")return window.Atlas36UI.blockForm(b);
+  const editing=!!b.noteId;
   const kind=b.type||"action",ds=b.date||iso(state.cursor),t=b.start||"09:00";
   const options=(state.data.actions||[]).filter(a=>isOpen(a)||actionId(a)===String(b.actionId)).map(a=>'<option value="'+h(actionId(a))+'" '+(actionId(a)===String(b.actionId)?"selected":"")+'>'+h(a.task)+'</option>').join("");
   openSheet(editing?"Edit Time Block":"Schedule Time",'<form id="planBlockForm"><div class="form-grid"><div class="form-group"><label>Block type</label><select name="type"><option value="action" '+(kind==="action"?"selected":"")+'>Action</option><option value="meeting" '+(kind==="meeting"?"selected":"")+'>Meeting (fixed)</option><option value="prep" '+(kind==="prep"?"selected":"")+'>Protected prep (fixed)</option></select></div><div class="form-group"><label>Action</label><select name="actionId"><option value="">Choose action…</option>'+options+'</select></div><div class="form-group full"><label>Title (meeting / prep)</label><input class="field" name="title" value="'+h(b.title||"")+'" placeholder="Meeting or preparation"></div><div class="form-group"><label>Date</label><input class="field" name="date" type="date" required value="'+h(ds)+'"></div><div class="form-group"><label>Start</label><input class="field" name="start" type="time" step="900" required value="'+h(t)+'"></div><div class="form-group"><label>Duration (hours)</label><input class="field" name="hours" type="number" min=".25" max="8" step=".25" required value="'+h(b.hours||((getAction(b.actionId)||{}).estimatedHours)||1)+'"></div><div class="form-group"><label>Conflicts</label><select name="conflict"><option value="manual">Keep fixed blocks; ask me to move</option><option value="make-room">Make Room — move flexible actions</option></select></div></div><p class="muted">Due dates remain unchanged. Meetings and prep are protected. Outlook sync is not active.</p><div class="sheet-actions"><button type="button" class="btn" data-close-sheet>Cancel</button>'+(editing?'<button type="button" class="btn" id="planNextWeek">Next week</button><button type="button" class="btn danger" id="planUnschedule">Unschedule</button>':"")+'<button class="btn primary" type="submit">Save Block</button></div></form>');
@@ -226,21 +241,21 @@ function onClick(e){
   if(el.dataset.planNewDate){blockForm({type:"action",date:el.dataset.planNewDate});return;}
   if(el.dataset.planAction){const a=getAction(el.dataset.planAction);blockForm({type:"action",actionId:actionId(a),date:iso(state.cursor),hours:Number(a.estimatedHours)||1});return;}
   if(el.hasAttribute("data-plan-auto")){autoSchedule();return;}
-  if(el.dataset.planEdit){const b=blocks().find(x=>x.noteId===el.dataset.planEdit);if(b)blockForm(b);return;}
+  if(el.dataset.planEdit){const b=blocks().find(x=>x.noteId===el.dataset.planEdit&&(!el.dataset.planOccurrence||x.occurrenceDate===el.dataset.planOccurrence));if(b)blockForm(b);return;}
   if(el.dataset.planReview){const b=blocks().find(x=>x.noteId===el.dataset.planReview);if(b)review(b);return;}
   if(el.dataset.planOpenDate){state.cursor=parseIso(el.dataset.planOpenDate);state.calendarMode="day";render();}
 }
 function install(){
   document.addEventListener("click",onClick);
-  document.addEventListener("dragstart",e=>{const item=e.target.closest("[data-plan-drag]");if(item&&e.dataTransfer){e.dataTransfer.setData("text/plain",item.dataset.planDrag);e.dataTransfer.effectAllowed="move";}});
+  document.addEventListener("dragstart",e=>{const item=e.target.closest("[data-plan-drag]");if(item&&e.dataTransfer){e.dataTransfer.setData("text/plain",JSON.stringify({id:item.dataset.planDrag,origin:item.dataset.planOccurrence||""}));e.dataTransfer.effectAllowed="move";}});
   document.addEventListener("dragover",e=>{if(e.target.closest("[data-plan-date]"))e.preventDefault();});
   document.addEventListener("drop",e=>{
     const target=e.target.closest("[data-plan-date]");if(!target||!e.dataTransfer)return;
     e.preventDefault();
-    const id=e.dataTransfer.getData("text/plain"),b=blocks().find(x=>x.noteId===id);if(!b)return;
+    let info;try{info=JSON.parse(e.dataTransfer.getData("text/plain"));}catch(e){return;}const b=blocks().find(x=>x.noteId===info.id&&(!info.origin||x.occurrenceDate===info.origin));if(!b)return;
     blockForm(Object.assign({},b,{date:target.dataset.planDate,start:target.dataset.planTime||b.start}));
   });
 }
 install();
-window.plan35={todayPanel,calendarPanel,isPlannerNote,blocks,backlog,findGap,validateBlock,renderDay:calDay};
+window.plan35={todayPanel,calendarPanel,isPlannerNote,blocks,parentBlock,backlog,findGap,validateBlock,renderDay:calDay,writeBlock,eraseBlock,saveMoved,withBusy,conflicts};
 })();
