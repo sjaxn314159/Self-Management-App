@@ -51,9 +51,14 @@ function backlog(){
     return ({"High":0,"Medium":1,"Low":2}[a.priority]||0)-({"High":0,"Medium":1,"Low":2}[b.priority]||0);
   });
 }
-function blockHtml(b,short){
+function blockHtml(b,short,dayView=false){
   const kind=b.type,expired=b.date<today()||(b.date===today()&&min(b.start)+b.hours*60<=new Date().getHours()*60+new Date().getMinutes());
-  return '<button class="plan-block '+h(kind)+'" draggable="true" data-plan-drag="'+h(b.noteId)+'" data-plan-edit="'+h(b.noteId)+'" title="Tap to edit; drag to move"><strong>'+h(pretty(min(b.start)))+' · '+h(label(b))+'</strong><small>'+h(desc(b))+(kind==="action"&&expired?" · REVIEW":"")+'</small></button>';
+  // Position by elapsed minutes, not by number of 30-minute rows. A one-hour
+  // block therefore spans two rows, and quarter-hour starts align correctly.
+  const durationMinutes=Math.round(Number(b.hours)*60);
+  const inlineStyle=dayView?' style="--plan-length:'+(durationMinutes/STEP)+';--plan-start-offset:'+((min(b.start)%STEP)/STEP)+'"':'';
+  const compact=dayView&&durationMinutes<=15?' plan-compact':'';
+  return '<button class="plan-block '+h(kind)+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'" data-plan-edit="'+h(b.noteId)+'" title="Tap to edit; drag to move"><strong>'+h(pretty(min(b.start)))+' · '+h(label(b))+'</strong><small>'+h(desc(b))+(kind==="action"&&expired?" · REVIEW":"")+'</small></button>';
 }
 function calControls(){
   return '<div class="plan-toolbar"><div class="seg">'+["day","week","month"].map(m=>'<button data-plan-mode="'+m+'" class="'+(state.calendarMode===m?"active":"")+'">'+m[0].toUpperCase()+m.slice(1)+'</button>').join("")+'</div><div class="cal-nav"><button class="btn" data-plan-offset="-1" aria-label="Previous">‹</button><button class="btn" data-plan-today>Today</button><button class="btn" data-plan-offset="1" aria-label="Next">›</button></div></div>';
@@ -62,7 +67,7 @@ function calDay(d){
   const ds=iso(d),bs=blocks().filter(b=>b.date===ds),slots=[];
   for(let m=START;m<END;m+=STEP){
     const list=bs.filter(b=>min(b.start)>=m&&min(b.start)<m+STEP);
-    slots.push('<div class="plan-slot" data-plan-date="'+ds+'" data-plan-time="'+clock(m)+'"><span class="plan-hour">'+h(pretty(m))+'</span><div class="plan-slot-work">'+list.map(b=>blockHtml(b)).join("")+'</div></div>');
+    slots.push('<div class="plan-slot" data-plan-date="'+ds+'" data-plan-time="'+clock(m)+'"><span class="plan-hour">'+h(pretty(m))+'</span><div class="plan-slot-work">'+list.map(b=>blockHtml(b,false,true)).join("")+'</div></div>');
   }
   return '<div class="plan-day"><div class="plan-view-sub">Drop a block onto a time slot, or tap it to move, finish, or unschedule it.</div>'+slots.join("")+'</div>';
 }
@@ -237,5 +242,5 @@ function install(){
   });
 }
 install();
-window.plan35={todayPanel,calendarPanel,isPlannerNote,blocks,backlog,findGap,validateBlock};
+window.plan35={todayPanel,calendarPanel,isPlannerNote,blocks,backlog,findGap,validateBlock,renderDay:calDay};
 })();
