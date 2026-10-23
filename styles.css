@@ -103,3 +103,19 @@
 .plan-day .plan-block.plan-compact .plan-block-main strong{line-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plan-day .plan-block.plan-compact .plan-block-main small{display:none}
 @media(max-width:800px){.plan-action-edit{padding:5px 7px}.plan-week-list .plan-action-edit{min-height:25px;min-width:28px}.plan-week-list .plan-block.has-action-edit{padding-right:44px}}
+
+
+/* Atlas Command v3.7 — action/project linking and reversible deletion */
+.action-controls37{white-space:nowrap}
+.danger-link37{color:#bf353b}
+.danger-link37:hover{color:#962127;text-decoration:underline}
+.danger-link37:disabled{opacity:.4;cursor:not-allowed;text-decoration:none}
+.project-card37{position:relative;display:flex;flex-direction:column;padding:0;overflow:hidden}
+.project-tile-open37{display:block;flex:1;border:0;background:none;color:inherit;text-align:left;width:100%;padding:16px;cursor:pointer}
+.project-tile-open37:hover h3{color:var(--blue)}
+.project-card-delete37{align-self:flex-end;margin:0 12px 9px}
+.backend-notice37{padding:10px 13px;background:#fff8e7;border:1px solid #ebdba3;border-radius:10px;color:#6e5600;font-size:12px;margin:0 0 12px}
+.form-helper37{display:block;font-size:11px;color:var(--muted);line-height:1.4}
+.action-row .danger-link37{color:#bf353b}
+.sheet-actions .btn.danger{border-color:#f0c9cd;background:#fff5f5}
+@media(max-width:800px){.action-controls37{white-space:normal}.project-tile-open37{padding:15px}}
