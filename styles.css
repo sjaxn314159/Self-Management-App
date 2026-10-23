@@ -69,3 +69,18 @@
 .plan-day .plan-block.plan-compact strong{line-height:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plan-day .plan-block.plan-compact small{display:none}
 @media(max-width:800px){.plan-day{--plan-slot-height:60px}}
+
+/* Atlas Command 3.6 brand + recurring meeting controls */
+.brand strong{letter-spacing:-.025em}
+.brand span{font-size:10px;font-weight:760;letter-spacing:.045em;white-space:nowrap}
+.atlas-repeat-fields{background:#f7faff;border:1px solid #e1eafb;border-radius:12px;padding:12px;margin-top:14px}
+.atlas-weekdays{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.atlas-day-choice{cursor:pointer}
+.atlas-day-choice input{position:absolute;opacity:0;pointer-events:none}
+.atlas-day-choice span{display:inline-grid;min-width:40px;place-items:center;border:1px solid #d4deec;border-radius:10px;padding:9px 8px;background:#fff;color:#51627a;font-size:12px;font-weight:700}
+.atlas-day-choice input:checked+span{background:#316cf1;border-color:#316cf1;color:#fff}
+.atlas-day-choice input:focus-visible+span{outline:3px solid #a8c7ff;outline-offset:2px}
+.atlas-repeat-hint{font-size:12px;color:var(--muted);padding-top:9px;line-height:1.45}
+.atlas-repeat-info{font-size:12px;margin-top:12px}
+.atlas-edit-buttons{flex-wrap:wrap}
+@media(max-width:800px){.atlas-day-choice span{min-width:36px;padding:8px 6px}.atlas-repeat-fields{padding:10px}.brand span{font-size:9px}}
