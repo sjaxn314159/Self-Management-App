@@ -86,6 +86,7 @@ test("day and week calendar actions show a separate Edit Action button",()=>{
   const {plan,state}=launch(),d=nextMonday();
   state.data.actions=[{actionId:"ACT-1",task:"Inspect quality results",status:"Open",dueDate:d}];
   state.data.notes=[note(d,"09:00",1,"action","ACT-1")];
+  state.cursor=parseIso(d);
   const html=plan.renderDay(parseIso(d));
   assert.match(html,/<div class="plan-block action has-action-edit"/);
   assert.match(html,/class="plan-block-main" data-plan-edit="N-09:00"/);
