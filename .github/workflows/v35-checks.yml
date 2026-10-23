@@ -1,4 +1,4 @@
-name: Self Management V3.5 checks
+name: Atlas Command 3.6 checks
 on:
   push:
     branches: [main, "release/**"]
@@ -16,6 +16,8 @@ jobs:
         run: |
           node --check app.js
           node --check scheduler35.js
+          node --check recurring36.js
+          node --check atlas36-ui.js
           node --check sw.js
       - name: Planner smoke tests
-        run: node --test tests/scheduler35.test.cjs
+        run: node --test tests/*.test.cjs
