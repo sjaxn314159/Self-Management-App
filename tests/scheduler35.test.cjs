@@ -11,12 +11,13 @@ function startWeek(d){const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%
 function nextMonday(){let d=new Date();do{d=addDays(d,1);}while(d.getDay()!==1);return iso(d);}
 function launch(){
   const state={data:{actions:[],notes:[]},cursor:new Date(),calendarMode:"day"};
-  const sandbox={window:{},document:{addEventListener(){}},state,crypto:webcrypto,Date,console,
+  const listeners={},edited=[];
+  const sandbox={window:{},document:{addEventListener(name,cb){(listeners[name]??=[]).push(cb);}},openAction(a){edited.push(a);},state,crypto:webcrypto,Date,console,
     esc:v=>String(v??""),iso,parseIso,addDays,startWeek,
     todayIso:()=>iso(new Date()),fmtDate:v=>v,priorityClass:v=>String(v||"").toLowerCase(),
     empty:v=>v};
   vm.runInNewContext(fs.readFileSync("scheduler35.js","utf8"),sandbox,{filename:"scheduler35.js"});
-  return {plan:sandbox.window.plan35,state};
+  return {plan:sandbox.window.plan35,state,listeners,edited};
 }
 function note(date,start,hours,type="meeting",actionId=""){
   return {noteId:"N-"+start,tags:"SMA35-SCHEDULE",note:JSON.stringify({uid:start,date,start,hours,type,actionId,title:"Reserved"})};
@@ -79,4 +80,34 @@ test("quarter-hour starts and durations are drawn at fractional rows",()=>{
   const {plan,state}=launch(),d=nextMonday();
   state.data.notes=[note(d,"09:15",.25)];
   assert.match(plan.renderDay(parseIso(d)),/plan-compact" style="--plan-length:0\.5;--plan-start-offset:0\.5"/);
+});
+
+test("day and week calendar actions show a separate Edit Action button",()=>{
+  const {plan,state}=launch(),d=nextMonday();
+  state.data.actions=[{actionId:"ACT-1",task:"Inspect quality results",status:"Open",dueDate:d}];
+  state.data.notes=[note(d,"09:00",1,"action","ACT-1")];
+  state.cursor=parseIso(d);
+  const html=plan.renderDay(parseIso(d));
+  assert.match(html,/<div class="plan-block action has-action-edit"/);
+  assert.match(html,/class="plan-block-main" data-plan-edit="N-09:00"/);
+  assert.match(html,/class="plan-action-edit" data-plan-action-edit="ACT-1"/);
+  assert.doesNotMatch(html,/<button[^>]*class="plan-block action/,"no buttons nested inside buttons");
+  assert.match(plan.calendarPanel(),/data-plan-action-edit="ACT-1"/);
+});
+test("Edit Action opens the action editor rather than the schedule editor",()=>{
+  const {state,listeners,edited}=launch();
+  const action={actionId:"ACT-1",task:"Inspect quality results",status:"Open"};
+  state.data.actions=[action];
+  let prevented=0,stopped=0;
+  const element={dataset:{planActionEdit:"ACT-1"}};
+  listeners.click[0]({target:{closest(){return element;}},preventDefault(){prevented++;},stopPropagation(){stopped++;}});
+  assert.equal(edited.length,1);
+  assert.equal(edited[0],action);
+  assert.equal(prevented,1);
+  assert.equal(stopped,1);
+});
+test("meeting blocks do not show an Edit Action button",()=>{
+  const {plan,state}=launch(),d=nextMonday();
+  state.data.notes=[note(d,"08:00",1,"meeting")];
+  assert.doesNotMatch(plan.renderDay(parseIso(d)),/data-plan-action-edit=/);
 });

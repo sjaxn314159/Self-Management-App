@@ -66,12 +66,22 @@ function backlog(){
 }
 function blockHtml(b,short,dayView=false){
   const kind=b.type,expired=b.date<today()||(b.date===today()&&min(b.start)+b.hours*60<=new Date().getHours()*60+new Date().getMinutes());
-  // Position by elapsed minutes, not by number of 30-minute rows. A one-hour
-  // block therefore spans two rows, and quarter-hour starts align correctly.
+  // Size the block by its real duration, including quarter-hour starts.
   const durationMinutes=Math.round(Number(b.hours)*60);
   const inlineStyle=dayView?' style="--plan-length:'+(durationMinutes/STEP)+';--plan-start-offset:'+((min(b.start)%STEP)/STEP)+'"':'';
   const compact=dayView&&durationMinutes<=15?' plan-compact':'';
-  return '<button class="plan-block '+h(kind)+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'" data-plan-edit="'+h(b.noteId)+'" data-plan-occurrence="'+h(b.occurrenceDate||'')+'" title="Tap to edit; drag to move"><strong>'+h(pretty(min(b.start)))+' · '+h(label(b))+'</strong><small>'+h(desc(b))+(b.isRecurring?" · "+h(window.AtlasRecurrence36.ruleSummary(parentBlock(b.noteId))):"")+(kind==="action"&&expired?" · REVIEW":"")+'</small></button>';
+  const content='<strong>'+h(pretty(min(b.start)))+' · '+h(label(b))+'</strong><small>'+h(desc(b))+(b.isRecurring?" · "+h(window.AtlasRecurrence36.ruleSummary(parentBlock(b.noteId))):"")+(kind==="action"&&expired?" · REVIEW":"")+'</small>';
+  const scheduled='data-plan-edit="'+h(b.noteId)+'" data-plan-occurrence="'+h(b.occurrenceDate||'')+'"';
+  // Actions have two independent controls: schedule editor and action editor.
+  // Do not nest buttons; that breaks mouse/keyboard interaction in browsers.
+  if(kind==="action"){
+    const id=h(b.actionId);
+    return '<div class="plan-block action has-action-edit'+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'">'+
+      '<button type="button" class="plan-block-main" '+scheduled+' title="Edit scheduled time">'+content+'</button>'+
+      '<button type="button" class="plan-action-edit" data-plan-action-edit="'+id+'" aria-label="Edit action: '+h(label(b))+'" title="Edit action details">✎ <span class="action-edit-text">Edit</span></button>'+
+      '</div>';
+  }
+  return '<button class="plan-block '+h(kind)+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'" '+scheduled+' title="Tap to edit; drag to move">'+content+'</button>';
 }
 function calControls(){
   return '<div class="plan-toolbar"><div class="seg">'+["day","week","month"].map(m=>'<button data-plan-mode="'+m+'" class="'+(state.calendarMode===m?"active":"")+'">'+m[0].toUpperCase()+m.slice(1)+'</button>').join("")+'</div><div class="cal-nav"><button class="btn" data-plan-offset="-1" aria-label="Previous">‹</button><button class="btn" data-plan-today>Today</button><button class="btn" data-plan-offset="1" aria-label="Next">›</button></div></div>';
@@ -231,9 +241,10 @@ function review(b){
   document.getElementById("planYes").onclick=()=>openCompleteAction(a,()=>withBusy(async()=>{await eraseBlock(b);toast("Completed and removed from schedule")}));
 }
 function onClick(e){
-  const el=e.target.closest("[data-plan-mode],[data-plan-offset],[data-plan-today],[data-plan-new],[data-plan-action],[data-plan-auto],[data-plan-edit],[data-plan-review],[data-plan-open-date],[data-plan-new-date]");
+  const el=e.target.closest("[data-plan-mode],[data-plan-offset],[data-plan-today],[data-plan-new],[data-plan-action],[data-plan-action-edit],[data-plan-auto],[data-plan-edit],[data-plan-review],[data-plan-open-date],[data-plan-new-date]");
   if(!el)return;
   e.preventDefault();e.stopPropagation();
+  if(el.dataset.planActionEdit){const a=getAction(el.dataset.planActionEdit);if(a)openAction(a);return;}
   if(el.dataset.planMode){state.calendarMode=el.dataset.planMode;render();return;}
   if(el.dataset.planOffset){const n=Number(el.dataset.planOffset);state.cursor=state.calendarMode==="month"?addMonths(state.cursor,n):addDays(state.cursor,n*(state.calendarMode==="week"?7:1));render();return;}
   if(el.hasAttribute("data-plan-today")){state.cursor=new Date();render();return;}
