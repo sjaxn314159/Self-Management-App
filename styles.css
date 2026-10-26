@@ -119,3 +119,5 @@
 .action-row .danger-link37{color:#bf353b}
 .sheet-actions .btn.danger{border-color:#f0c9cd;background:#fff5f5}
 @media(max-width:800px){.action-controls37{white-space:normal}.project-tile-open37{padding:15px}}
+
+.plan-review-error:not([hidden]){display:block;margin:12px 0 4px;padding:12px 14px;border:1px solid #e9b8b8;border-radius:10px;background:#fff2f2;color:#963333;line-height:1.45}

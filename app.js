@@ -31,7 +31,7 @@ class ApiClient {
       const cb='__smcb'+Date.now()+'_'+(this.seq++);
       const q=new URLSearchParams({action,token,callback:cb,...params});
       const script=document.createElement('script');
-      const timer=setTimeout(()=>done(new Error('API request timed out.')),20000);
+      const timer=setTimeout(()=>done(new Error('API request timed out.')),action==='txn'?15000:45000);
       const done=(err,data)=>{clearTimeout(timer);delete window[cb];script.remove();err?reject(err):resolve(data)};
       window[cb]=payload=>payload&&payload.ok?done(null,payload.result):done(new Error((payload&&payload.error)||'API request failed'));
       script.onerror=()=>done(new Error('Could not reach Apps Script API.'));
@@ -42,14 +42,19 @@ class ApiClient {
   async post(action,...args){
     const requestId='REQ-'+crypto.randomUUID().replaceAll('-','').slice(0,16).toUpperCase();
     await fetch(this.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({key:this.key,action,args,requestId,source:'PWA'})});
-    const deadline=Date.now()+12000;
+    const deadline=Date.now()+60000;
     while(Date.now()<deadline){
-      await new Promise(r=>setTimeout(r,450));
-      const tx=await this.jsonp('txn',{requestId});
-      if(tx && tx.status==='ok')return tx;
-      if(tx && tx.status==='error')throw new Error(tx.error||'Write failed.');
+      await new Promise(r=>setTimeout(r,900));
+      try{
+        const tx=await this.jsonp('txn',{requestId});
+        if(tx && tx.status==='ok')return tx;
+        if(tx && tx.status==='error')throw new Error(tx.error||'Write failed.');
+      }catch(e){
+        // A single slow status check is not proof that the write failed.
+        if(!/API request timed out|Could not reach Apps Script API/i.test(e.message||''))throw e;
+      }
     }
-    throw new Error('The write could not be verified. Refresh before retrying.');
+    throw new Error('The write could not be verified. Refresh before retrying to avoid duplicate changes.');
   }
   call(method,...args){
     if(method==='getBootstrap') return this.jsonp('bootstrap');
