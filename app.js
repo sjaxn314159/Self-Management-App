@@ -302,9 +302,9 @@ function bindView(){
   $('[data-new-time]')?.addEventListener('click',()=>openTimeForm());$$('[data-edit-time]').forEach(b=>b.onclick=()=>openTimeForm(timeEntries().find(t=>t.timeEntryId===b.dataset.editTime)||{}));
   $('#notesSearch')?.addEventListener('input',()=>{const q=$('#notesSearch').value.toLowerCase();$$('[data-note-search]').forEach(n=>n.style.display=!q||n.dataset.noteSearch.includes(q)?'':'none')});
   $('[data-new-daily]')?.addEventListener('click',()=>openDailyForm());$('[data-new-brag]')?.addEventListener('click',()=>openBragForm());$('[data-new-project]')?.addEventListener('click',()=>openProjectForm());
-  $('[data-project]').forEach(b=>b.onclick=()=>openProjectDetail(b.dataset.project));
-  $('[data-delete-project]').forEach(b=>b.onclick=()=>deleteProject37(b.dataset.deleteProject));
-  $('[data-delete-action]').forEach(b=>b.onclick=()=>deleteAction37(b.dataset.deleteAction));
+  $$('[data-project]').forEach(b=>b.onclick=()=>openProjectDetail(b.dataset.project));
+  $$('[data-delete-project]').forEach(b=>b.onclick=()=>deleteProject37(b.dataset.deleteProject));
+  $$('[data-delete-action]').forEach(b=>b.onclick=()=>deleteAction37(b.dataset.deleteAction));
   $('[data-new-goal]')?.addEventListener('click',()=>openGoalForm());$$('[data-goal]').forEach(b=>b.onclick=()=>openGoalDetail(b.dataset.goal));
 }
 function filterActions(){const q=($('#actionSearch')?.value||'').toLowerCase(),s=$('#statusFilter')?.value,p=$('#priorityFilter')?.value;$$('#actionBody tr').forEach(r=>{r.style.display=((!q||r.dataset.search.includes(q))&&(s==='All Statuses'||r.dataset.status===s)&&(p==='All Priorities'||r.dataset.priority===p))?'':'none'});}
