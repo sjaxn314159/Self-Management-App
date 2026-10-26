@@ -220,23 +220,54 @@ async function autoSchedule(){
   });
 }
 async function notFinished(b,remaining){
-  await withBusy(async()=>{
-    const a=getAction(b.actionId);if(!a)throw Error("Action not found.");
-    const hours=validHours(remaining);
-    const payload=Object.assign({},a,{actionId:a.actionId||"",row:a.row,estimatedHours:hours,repeats:a.repeats==="Yes",status:a.status});
-    await bridge.call("saveAction",payload);
-    const fresh=await bridge.call("getBootstrap");
-    const saved=(fresh.actions||[]).find(x=>actionId(x)===actionId(a));
-    if(!saved||Number(saved.estimatedHours)!==hours||saved.dueDate!==a.dueDate)throw Error("Remaining hours could not be verified. Time block is unchanged.");
-    state.data=fresh;
-    await eraseBlock(b);
-    closeSheet();toast("Remaining work returned to Needs Scheduling");
-  });
+  if(writing)return;
+  const no=document.getElementById("planNo");
+  const error=document.getElementById("planReviewError");
+  const buttons=[...document.querySelectorAll(".plan-review-actions button")];
+  const closers=[...document.querySelectorAll("#sheet [data-close-sheet]")];
+  if(!no)return;
+  if(error){error.hidden=true;error.textContent="";}
+  for(const btn of [...buttons,...closers])btn.disabled=true;
+  no.textContent="Saving…";
+  try{
+    await withBusy(async()=>{
+      try{
+        const a=getAction(b.actionId);
+        if(!a)throw Error("Action not found.");
+        const hours=validHours(remaining);
+        // Do not rewrite the entire Action row when the remaining estimate is unchanged.
+        if(Number(a.estimatedHours||0)!==hours){
+          const payload=Object.assign({},a,{actionId:a.actionId||"",row:a.row,estimatedHours:hours,repeats:a.repeats==="Yes",status:a.status});
+          await bridge.call("saveAction",payload);
+          // The API transaction receipt confirms the write; keep the local view in sync.
+          a.estimatedHours=hours;
+        }
+        no.textContent="Updating schedule…";
+        await bridge.call("deleteNote",b.noteId);
+        // Avoid two expensive bootstrap requests. A successful transaction is a confirmed write.
+        state.data.notes=(state.data.notes||[]).filter(n=>String(n.noteId)!==String(b.noteId));
+        closeSheet();
+        render();
+        toast("Remaining work returned to Needs Scheduling");
+      }catch(e){
+        if(error){
+          error.textContent="Could not complete the review: "+(e.message||String(e))+" Check the planner before retrying.";
+          error.hidden=false;
+        }
+        throw e;
+      }
+    });
+  }finally{
+    if(document.getElementById("planNo")===no){
+      no.textContent="Not finished";
+      for(const btn of [...buttons,...closers])btn.disabled=false;
+    }
+  }
 }
 function review(b){
   if(!b||b.type!=="action")return blockForm(b);
   const a=getAction(b.actionId);if(!a)return;
-  openSheet("Did you complete this task?",'<div class="completion-action"><strong>'+h(a.task)+'</strong><div class="meta"><span>'+h(fmtDate(b.date))+'</span><span>'+h(pretty(min(b.start)))+'</span><span>'+h(b.hours)+' hr scheduled</span></div></div><div class="form-group"><label>If not, how many hours remain?</label><input class="field" id="planRemaining" type="number" min=".25" max="8" step=".25" value="'+h(b.hours)+'"></div><div class="sheet-actions plan-review-actions"><button class="btn" data-close-sheet>Later</button><button class="btn" id="planNo">Not finished</button><button class="btn primary" id="planYes">Yes, completed</button></div>');
+  openSheet("Did you complete this task?",'<div class="completion-action"><strong>'+h(a.task)+'</strong><div class="meta"><span>'+h(fmtDate(b.date))+'</span><span>'+h(pretty(min(b.start)))+'</span><span>'+h(b.hours)+' hr scheduled</span></div></div><div class="form-group"><label>If not, how many hours remain?</label><input class="field" id="planRemaining" type="number" min=".25" max="8" step=".25" value="'+h(b.hours)+'"></div><p id="planReviewError" class="plan-review-error" role="alert" hidden></p><div class="sheet-actions plan-review-actions"><button class="btn" data-close-sheet>Later</button><button class="btn" id="planNo">Not finished</button><button class="btn primary" id="planYes">Yes, completed</button></div>');
   document.getElementById("planNo").onclick=()=>notFinished(b,document.getElementById("planRemaining").value);
   document.getElementById("planYes").onclick=()=>openCompleteAction(a,()=>withBusy(async()=>{await eraseBlock(b);toast("Completed and removed from schedule")}));
 }
