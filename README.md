@@ -1,4 +1,4 @@
-# Atlas Command V3.6
+# Atlas Command V3.8
 
 **Personal Operations System** — calendar-first time blocking, action management,
 goals, routines, notes, work logs, and recurring meetings.
@@ -51,3 +51,24 @@ deployment; that would invalidate previously connected devices.
 Enable Pages from `main` root. Open the Pages URL in your browser and refresh
 to load the new V3.6 assets. On iPhone, use Safari > Share > Add to Home Screen.
 If the old home-screen icon remains cached, remove that shortcut and re-add it.
+
+## V3.8 — Sub-Actions
+
+Each Action editor has an embedded checklist of sub-actions with instant-save checkboxes,
+rename, add, delete and move-up/down buttons. An action's checklist completion count
+appears in Today and Action Items. Checking all steps does **not** automatically complete
+the parent Action.
+
+Sub-actions are stored in the existing Google Sheets **Notes** tab as a single JSON
+record per stable Action ID, tagged `ATLAS38-SUBACTIONS`. The records are hidden
+from the ordinary Notes screen. Existing `saveNote`, `txn`, and `getBootstrap` endpoints
+handle persistence; **no Google Apps Script backend modification or redeployment is required**.
+For a new Action, enter checklist items before clicking Save; the parent Action is
+saved first, then its checklist. Editing existing Actions saves individual checklist
+changes immediately, with explicit Saving/error feedback and prevention of duplicate clicks.
+
+Recurring actions copy the most recent prior occurrence's checklist **as unchecked items**
+when the new occurrence is opened. The new occurrence gets its own stable checklist
+record when changed or saved; completed older occurrences retain their original records.
+
+If a write cannot be verified, refresh the app and inspect the action before retrying.
