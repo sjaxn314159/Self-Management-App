@@ -72,3 +72,9 @@ when the new occurrence is opened. The new occurrence gets its own stable checkl
 record when changed or saved; completed older occurrences retain their original records.
 
 If a write cannot be verified, refresh the app and inspect the action before retrying.
+
+## V3.8.1 — Continuous checklist entry fix
+
+The New Sub-Action text box and Add button remain enabled while a previous step is
+saving to Google Sheets. Rapid changes are queued and saved sequentially, with
+latest edits retained. Refresh before retrying if an API write cannot be verified.
