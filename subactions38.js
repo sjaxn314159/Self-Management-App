@@ -184,7 +184,7 @@
       if (actionId(parent) && !error) flush();
     }
     function add() {
-      if (busy) return;
+      // Add can run while a prior save is pending; flush() queues the change.
       const input = $one(root, "#subactions38New");
       const value = (input.value || "").trim();
       if (!value) return;
