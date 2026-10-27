@@ -121,3 +121,35 @@
 @media(max-width:800px){.action-controls37{white-space:normal}.project-tile-open37{padding:15px}}
 
 .plan-review-error:not([hidden]){display:block;margin:12px 0 4px;padding:12px 14px;border:1px solid #e9b8b8;border-radius:10px;background:#fff2f2;color:#963333;line-height:1.45}
+
+
+/* Atlas Command V3.8 — Sub-Actions */
+.subactions38{border-top:1px solid #e5eaf2;padding-top:18px;margin-top:8px;}
+.subactions38-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;}
+.subactions38-heading label{margin:0;font-size:14px;font-weight:800;color:#18233e;}
+.subactions38-progress{font-size:12px;font-weight:700;color:#516179;white-space:nowrap;}
+.subactions38-track{height:6px;background:#e8edf2;border-radius:999px;overflow:hidden;margin-bottom:12px;}
+.subactions38-bar{height:100%;width:0;background:#2b9a65;border-radius:999px;transition:width .18s ease;}
+.subactions38-list{display:grid;gap:7px;}
+.subactions38-row{display:flex;align-items:center;gap:8px;min-width:0;}
+.subactions38-row>input[type="checkbox"]{width:19px;height:19px;flex:none;accent-color:#2b9a65;cursor:pointer;}
+.subactions38-text.field{flex:1;min-width:0;height:38px;padding:7px 10px;font-size:13px;}
+.subactions38-text.subactions38-done{text-decoration:line-through;color:#7a8596;background:#f7f9fb;}
+.subactions38-move{display:flex;flex-direction:column;gap:0;}
+.subactions38-icon{border:1px solid #dce3eb;background:#fff;color:#566780;border-radius:7px;min-width:29px;height:27px;cursor:pointer;font-size:16px;}
+.subactions38-icon:disabled{opacity:.34;cursor:default;}
+.subactions38-remove{color:#a6474f;min-width:30px;height:34px;font-size:19px;}
+.subactions38-add{display:flex;align-items:center;gap:8px;margin-top:12px;}
+.subactions38-add .field{flex:1;min-width:0;height:40px;}
+.subactions38-add .btn{white-space:nowrap;}
+.subactions38-hint,.subactions38-status{font-size:11px;color:#64748b;margin:7px 0 0;line-height:1.4;}
+.subactions38-status{font-weight:650;color:#3c587a;}
+.subactions38-error:not([hidden]){display:block;padding:10px 12px;background:#fff3f2;color:#943e3e;border:1px solid #f0c4c1;border-radius:9px;font-size:12px;}
+.subactions38-count{display:inline-flex;align-items:center;border-radius:20px;padding:2px 8px;background:#ecf7ef;color:#296945;font-size:11px;font-weight:700;white-space:nowrap;}
+.task-cell>.subactions38-count{margin:5px 0 1px;}
+@media(max-width:600px){
+  .subactions38-row{gap:5px;}
+  .subactions38-icon{min-width:25px;}
+  .subactions38-text.field{font-size:12px;padding:5px 7px;}
+  .subactions38-add{gap:5px;}
+}
