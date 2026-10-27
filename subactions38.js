@@ -82,26 +82,32 @@
     let pending = Promise.resolve();
     let error = "";
     let createdAttempt = false;
-    function paint() {
+    let revision = 0;
+    let savedRevision = 0;
+    function paint(updateRows = true) {
       if (!root.isConnected) return;
       const done = items.filter(x => x.done).length;
       $one(root, ".subactions38-progress").textContent = done + " of " + items.length + " complete";
       $one(root, ".subactions38-bar").style.width = (items.length ? Math.round(done / items.length * 100) : 0) + "%";
       const list = $one(root, ".subactions38-list");
-      list.innerHTML = items.map((item, i) => '<div class="subactions38-row">' +
-        '<input type="checkbox" data-sa-check="' + i + '" aria-label="Complete sub-action: ' + html(item.text) + '"' + (item.done ? ' checked' : '') + (busy ? ' disabled' : '') + '>' +
-        '<input class="field subactions38-text' + (item.done ? ' subactions38-done' : '') + '" type="text" data-sa-text="' + i + '" maxlength="500" value="' + html(item.text) + '"' + (busy ? ' disabled' : '') + ' aria-label="Edit sub-action">' +
-        '<div class="subactions38-move"><button type="button" class="subactions38-icon" data-sa-up="' + i + '" ' + (busy || i === 0 ? 'disabled' : '') + ' aria-label="Move up" title="Move up">↑</button>' +
-        '<button type="button" class="subactions38-icon" data-sa-down="' + i + '" ' + (busy || i === items.length-1 ? 'disabled' : '') + ' aria-label="Move down" title="Move down">↓</button></div>' +
-        '<button type="button" class="subactions38-icon subactions38-remove" data-sa-remove="' + i + '" ' + (busy ? 'disabled' : '') + ' aria-label="Remove sub-action" title="Remove">×</button></div>').join("");
-      $one(root, "#subactions38Add").disabled = busy;
-      $one(root, "#subactions38New").disabled = busy;
-      $one(root, ".subactions38-status").textContent = busy ? "Saving sub-actions…" : (actionId(parent) ? "Changes save automatically." : "Checklist saves when you save this new Action.");
+      if (updateRows) list.innerHTML = items.map((item, i) => '<div class="subactions38-row">' +
+        '<input type="checkbox" data-sa-check="' + i + '" aria-label="Complete sub-action: ' + html(item.text) + '"' + (item.done ? ' checked' : '') + '' + '>' +
+        '<input class="field subactions38-text' + (item.done ? ' subactions38-done' : '') + '" type="text" data-sa-text="' + i + '" maxlength="500" value="' + html(item.text) + '"' + '' + ' aria-label="Edit sub-action">' +
+        '<div class="subactions38-move"><button type="button" class="subactions38-icon" data-sa-up="' + i + '" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up" title="Move up">↑</button>' +
+        '<button type="button" class="subactions38-icon" data-sa-down="' + i + '" ' + (i === items.length-1 ? 'disabled' : '') + ' aria-label="Move down" title="Move down">↓</button></div>' +
+        '<button type="button" class="subactions38-icon subactions38-remove" data-sa-remove="' + i + '" ' + '' + ' aria-label="Remove sub-action" title="Remove">×</button></div>').join("");
+      // Keep the entry controls usable during network writes so more steps
+      // can be entered without waiting for Google Sheets to respond.
+      $one(root, "#subactions38Add").disabled = false;
+      $one(root, "#subactions38New").disabled = false;
+      $one(root, ".subactions38-status").textContent = busy ? "Saving sub-actions… You can keep adding." :
+        error ? "Changes not confirmed — see the error below." :
+        (actionId(parent) ? "Changes save automatically." : "Checklist saves when you save this new Action.");
       const errEl = $one(root, ".subactions38-error");
       errEl.hidden = !error;
       errEl.textContent = error;
-      $all(root, "[data-sa-check]").forEach(el => el.onchange = () => change(() => {items[Number(el.dataset.saCheck)].done = el.checked;}));
-      $all(root, "[data-sa-text]").forEach(el => {
+      if (updateRows) $all(root, "[data-sa-check]").forEach(el => el.onchange = () => change(() => {items[Number(el.dataset.saCheck)].done = el.checked;}));
+      if (updateRows) $all(root, "[data-sa-text]").forEach(el => {
         el.onkeydown = event => {if(event.key === "Enter") {event.preventDefault();el.blur();}};
         el.onchange = () => {
           const value = el.value.trim();
@@ -110,21 +116,21 @@
           if (items[i].text !== value) change(() => {items[i].text = value;});
         };
       });
-      $all(root, "[data-sa-up]").forEach(el => el.onclick = () => change(() => {
+      if (updateRows) $all(root, "[data-sa-up]").forEach(el => el.onclick = () => change(() => {
         const i = Number(el.dataset.saUp);
         if(i > 0) [items[i-1],items[i]] = [items[i],items[i-1]];
       }));
-      $all(root, "[data-sa-down]").forEach(el => el.onclick = () => change(() => {
+      if (updateRows) $all(root, "[data-sa-down]").forEach(el => el.onclick = () => change(() => {
         const i = Number(el.dataset.saDown);
         if(i < items.length-1) [items[i],items[i+1]] = [items[i+1],items[i]];
       }));
-      $all(root, "[data-sa-remove]").forEach(el => el.onclick = () => change(() => {items.splice(Number(el.dataset.saRemove), 1);}));
+      if (updateRows) $all(root, "[data-sa-remove]").forEach(el => el.onclick = () => change(() => {items.splice(Number(el.dataset.saRemove), 1);}));
     }
-    async function persist() {
+    async function persist(snapshot) {
       if (!actionId(parent)) return;
       if (!note && createdAttempt) throw new Error("The first checklist save is unverified. Refresh before retrying to prevent duplicates.");
       const data = {schemaVersion:SCHEMA,uid,actionId:actionId(parent),seriesId:String(parent.seriesId || ""),
-        occurrence:Number(parent.occurrence) || 0,items:items.map(x=>({...x}))};
+        occurrence:Number(parent.occurrence) || 0,items:snapshot};
       const encoded = JSON.stringify(data);
       if (encoded.length > 45000) throw new Error("Checklist is too large for a Google Sheets cell.");
       const payload = {noteId:note ? note.noteId : "", date: todayIso(),
@@ -145,18 +151,37 @@
       }
       render();
     }
-    function change(fn) {
-      if (busy) return;
-      const before = items.map(x=>({...x}));
-      fn();
-      error = "";
-      if (!actionId(parent)) { paint(); return; }
-      busy = true; paint();
+    function flush() {
+      if (busy || error || !actionId(parent) || savedRevision >= revision) return pending;
+      busy = true;
+      paint(false);
       pending = (async () => {
-        try {await persist();}
-        catch (e) {items = before;error = "Sub-action wasn't confirmed: " + (e.message || String(e)) + " Refresh before retrying if the connection was interrupted.";}
-        finally {busy = false; paint();}
+        try {
+          // One write at a time; changes made during the first write are
+          // included in a follow-up write, preventing lost updates.
+          while (savedRevision < revision) {
+            const target = revision;
+            const snapshot = items.map(x => ({...x}));
+            await persist(snapshot);
+            savedRevision = target;
+          }
+        } catch (e) {
+          // Preserve unsaved changes locally; do not blindly retry a write
+          // whose result could be unknown.
+          error = "Sub-actions couldn't be confirmed: " + (e.message || String(e)) +
+            " Your changes are still shown here; refresh to check before retrying.";
+        } finally {
+          busy = false;
+          paint(false);
+        }
       })();
+      return pending;
+    }
+    function change(fn) {
+      fn();
+      revision++;
+      paint();
+      if (actionId(parent) && !error) flush();
     }
     function add() {
       if (busy) return;
@@ -165,7 +190,7 @@
       if (!value) return;
       input.value = "";
       change(() => items.push({id:uniqueId(),text:value,done:false}));
-      if (!busy) input.focus();
+      input.focus();
     }
     $one(root, "#subactions38Add").onclick = add;
     $one(root, "#subactions38New").onkeydown = event => {if(event.key === "Enter") {event.preventDefault();add();}};
@@ -175,14 +200,14 @@
         await pending;
         if (error) throw new Error(error);
         parent = saved;
-        // New Actions may contain draft items. Existing checklists autosave on each edit.
-        if (!note && items.length) {
-          if (createdAttempt) throw new Error("Checklist needs a refresh before retrying; the Action itself was saved.");
-          busy = true; paint();
-          try { await persist();error=""; }
-          catch(e){error = "Action saved, but checklist could not be verified: " + (e.message || String(e));throw new Error(error);}
-          finally {busy=false;paint();}
+        // A new Action or inherited recurring checklist needs its first write.
+        // Any changes made while saving are drained in order.
+        if (!note && items.length && revision <= savedRevision) revision++;
+        if (revision > savedRevision) {
+          await flush();
+          if (error) throw new Error("Action saved, but " + error);
         }
+        paint(false);
       }
     };
   }
