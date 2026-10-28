@@ -79,8 +79,15 @@ The New Sub-Action text box and Add button remain enabled while a previous step 
 saving to Google Sheets. Rapid changes are queued and saved sequentially, with
 latest edits retained. Refresh before retrying if an API write cannot be verified.
 
+
 ## Brand architecture
 
 Forge is the professional brand; Atlas is the home and personal brand.
 Forge Command retains the existing app URL, data identifiers, and integration settings.
 Legacy internal Atlas identifiers remain for compatibility with saved checklists and schedules.
+
+## Calendar actual work (V3.8.4)
+
+Open an action calendar block and choose **Log actual hours**. Enter actual time independently of the estimate or scheduled duration. **Log hours · keep task open** records progress without completing the action; **Log hours · complete task** also finishes the action. Both preserve a gray calendar history block. Time uses the existing Time Log with action, project and goal links, including the project goal when the action has no direct goal. Open a gray block to correct its total; schedule a new block for another work session. Logged blocks no longer reserve future planning capacity.
+
+No Apps Script redeployment is required. The calendar link is retained in the time entry description; deleting that entry also removes its recorded-work indicator. Existing historical blocks deleted by older versions cannot be reconstructed automatically.

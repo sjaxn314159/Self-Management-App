@@ -18,23 +18,25 @@ function actionId(a){return String(a.actionId||a.row);}
 function getAction(id){return (state.data.actions||[]).find(a=>actionId(a)===String(id));}
 function isOpen(a){return a&&String(a.status).toLowerCase()!=="done";}
 function dateShift(ds,n){return iso(addDays(parseIso(ds),n));}
-let cachedBlocks=null,cachedData=null,cachedCursor="",cachedDate="";
+let cachedBlocks=null,cachedData=null,cachedCursor="",cachedDate="",cachedTime=null;
 function blocks(){
   const current=iso(state.cursor),now=today(),notes=state.data.notes;
-  if(cachedBlocks&&cachedData===notes&&cachedCursor===current&&cachedDate===now)return cachedBlocks;
+  if(cachedBlocks&&cachedData===notes&&cachedCursor===current&&cachedDate===now&&cachedTime===state.data.timeEntries)return cachedBlocks;
   const raw=(notes||[]).filter(isPlannerNote).map(n=>{
     try{
       const v=JSON.parse(n.note||"{}");
       if(!v.date||!v.start||!(Number(v.hours)>0)||!["action","meeting","prep"].includes(v.type))return null;
       return Object.assign({},v,{noteId:n.noteId,hours:Number(v.hours),locked:v.type!=="action",uid:v.uid||n.noteId});
     }catch(e){return null;}
-  }).filter(Boolean).filter(b=>b.type!=="action"||isOpen(getAction(b.actionId)));
+  }).filter(Boolean).map(b=>Object.assign(b,{workEntry:workEntry(b)})).filter(b=>b.type!=="action"||b.workEntry||isOpen(getAction(b.actionId)));
   const from=[dateShift(now,-90),dateShift(current,-65)].sort()[0];
   const to=[dateShift(now,130),dateShift(current,65)].sort().pop();
   cachedBlocks=window.AtlasRecurrence36?window.AtlasRecurrence36.expand(raw,from,to):raw;
-  cachedData=notes;cachedCursor=current;cachedDate=now;
+  cachedData=notes;cachedCursor=current;cachedDate=now;cachedTime=state.data.timeEntries;
   return cachedBlocks;
 }
+function workMarker(b){return "[Forge block: "+(b.uid||b.noteId)+"]";}
+function workEntry(b){return (state.data.timeEntries||[]).find(t=>String(t.description||"").includes(workMarker(b)));}
 function parentBlock(id){
   const n=(state.data.notes||[]).find(x=>x.noteId===id&&isPlannerNote(x));
   if(!n)return null;
@@ -44,7 +46,7 @@ function isPlannerNote(n){return String(n.tags||"").split(/[\s,]+/).includes(TAG
 function label(b){return b.type==="action"?(getAction(b.actionId)||{}).task||b.title||"Missing action":b.title;}
 function desc(b){return (b.type==="meeting"?"Meeting":b.type==="prep"?"Protected prep":"Action")+" · "+(Number(b.hours)||1)+" hr";}
 function occupied(b){return [min(b.start),min(b.start)+Math.round(b.hours*60)];}
-function overlaps(a,b){if(a.date!==b.date||(a.noteId===b.noteId&&(a.occurrenceDate||a.date)===(b.occurrenceDate||b.date)))return false;const x=occupied(a),y=occupied(b);return x[0]<y[1]&&y[0]<x[1];}
+function overlaps(a,b){if(a.workEntry||b.workEntry)return false;if(a.date!==b.date||(a.noteId===b.noteId&&(a.occurrenceDate||a.date)===(b.occurrenceDate||b.date)))return false;const x=occupied(a),y=occupied(b);return x[0]<y[1]&&y[0]<x[1];}
 function conflicts(b,all){return (all||blocks()).filter(x=>overlaps(b,x));}
 function validHours(hh){const n=Number(hh);if(!isFinite(n)||n<.25||n>8||Math.round(n*4)!==n*4)throw Error("Duration must be 0.25–8 hours in 15-minute increments.");return n;}
 function validateBlock(b){
@@ -58,7 +60,7 @@ function validateBlock(b){
 }
 function backlog(){
   const limit=dateShift(today(),30),now=new Date(),minuteNow=now.getHours()*60+now.getMinutes();
-  const scheduled=new Set(blocks().filter(b=>b.type==="action"&&(b.date>today()||(b.date===today()&&min(b.start)+b.hours*60>minuteNow))).map(b=>String(b.actionId)));
+  const scheduled=new Set(blocks().filter(b=>b.type==="action"&&!b.workEntry&&(b.date>today()||(b.date===today()&&min(b.start)+b.hours*60>minuteNow))).map(b=>String(b.actionId)));
   return (state.data.actions||[]).filter(isOpen).filter(a=>!scheduled.has(actionId(a))).filter(a=>!a.dueDate||a.dueDate<=limit).sort((a,b)=>{
     const due=(a.dueDate||"9999").localeCompare(b.dueDate||"9999");if(due)return due;
     return ({"High":0,"Medium":1,"Low":2}[a.priority]||0)-({"High":0,"Medium":1,"Low":2}[b.priority]||0);
@@ -70,13 +72,13 @@ function blockHtml(b,short,dayView=false){
   const durationMinutes=Math.round(Number(b.hours)*60);
   const inlineStyle=dayView?' style="--plan-length:'+(durationMinutes/STEP)+';--plan-start-offset:'+((min(b.start)%STEP)/STEP)+'"':'';
   const compact=dayView&&durationMinutes<=15?' plan-compact':'';
-  const content='<strong>'+h(pretty(min(b.start)))+' · '+h(label(b))+'</strong><small>'+h(desc(b))+(b.isRecurring?" · "+h(window.AtlasRecurrence36.ruleSummary(parentBlock(b.noteId))):"")+(kind==="action"&&expired?" · REVIEW":"")+'</small>';
+  const content='<strong>'+h(pretty(min(b.start)))+' · '+h(label(b))+'</strong><small>'+h(desc(b))+(b.workEntry?' · '+h(b.workEntry.hours)+' hr logged':'')+(b.isRecurring?" · "+h(window.AtlasRecurrence36.ruleSummary(parentBlock(b.noteId))):"")+(kind==="action"&&expired&&!b.workEntry?" · REVIEW":"")+'</small>';
   const scheduled='data-plan-edit="'+h(b.noteId)+'" data-plan-occurrence="'+h(b.occurrenceDate||'')+'"';
   // Actions have two independent controls: schedule editor and action editor.
   // Do not nest buttons; that breaks mouse/keyboard interaction in browsers.
   if(kind==="action"){
     const id=h(b.actionId);
-    return '<div class="plan-block action has-action-edit'+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'">'+
+    return '<div class="plan-block action has-action-edit'+(b.workEntry?' plan-worked':'')+compact+'"'+inlineStyle+' draggable="'+(!b.workEntry)+'" '+(b.workEntry?'':'data-plan-drag="'+h(b.noteId)+'"')+'>'+
       '<button type="button" class="plan-block-main" '+scheduled+' title="Edit scheduled time">'+content+'</button>'+
       '<button type="button" class="plan-action-edit" data-plan-action-edit="'+id+'" aria-label="Edit action: '+h(label(b))+'" title="Edit action details">✎ <span class="action-edit-text">Edit</span></button>'+
       '</div>';
@@ -116,7 +118,7 @@ function calendar(){
   return '<div class="card plan-calendar"><div class="card-head"><div><h3>'+h(title)+'</h3><p>Scheduled actions, meetings and protected prep · 8 AM–5 PM</p></div></div><div class="card-body">'+calControls()+(mode==="day"?calDay(d):mode==="week"?calWeek(d):calMonth(d))+'</div></div>';
 }
 function nowPanel(){
-  const ds=today(),n=new Date(),m=n.getHours()*60+n.getMinutes(),b=blocks().filter(x=>x.date===ds).sort((a,b)=>min(a.start)-min(b.start));
+  const ds=today(),n=new Date(),m=n.getHours()*60+n.getMinutes(),b=blocks().filter(x=>x.date===ds&&!x.workEntry).sort((a,b)=>min(a.start)-min(b.start));
   const current=b.find(x=>min(x.start)<=m&&min(x.start)+x.hours*60>m);
   const next=b.find(x=>min(x.start)>m);
   const missed=b.filter(x=>x.type==="action"&&min(x.start)+x.hours*60<=m);
@@ -137,7 +139,7 @@ function findGap(hours,fromDate,afterMinute,ignoreNotes,additional){
   const extras=additional||[];
   for(let day=0;day<35;day++){
     const date=iso(addDays(base,day)),weekday=parseIso(date).getDay();if(weekday===0||weekday===6)continue;
-    const busy=blocks().filter(b=>b.date===date&&!ignore.has(b.noteId)).concat(extras.filter(b=>b.date===date)).map(occupied);
+    const busy=blocks().filter(b=>b.date===date&&!b.workEntry&&!ignore.has(b.noteId)).concat(extras.filter(b=>b.date===date)).map(occupied);
     busy.push([720,750]); // lunch reservation; never place work over lunch
     const now=new Date(),earliest=date===today()?round(now.getHours()*60+now.getMinutes()):START;
     for(let s=round(Math.max(START,day===0?(afterMinute||START):START,earliest));s+count<=END;s+=STEP){
@@ -189,11 +191,13 @@ async function withBusy(job){
 }
 function blockForm(b){
   b=b||{};
+  if(b.workEntry)return review(b);
   if(window.Atlas36UI&&b.type!=="action")return window.Atlas36UI.blockForm(b);
   const editing=!!b.noteId;
   const kind=b.type||"action",ds=b.date||iso(state.cursor),t=b.start||"09:00";
   const options=(state.data.actions||[]).filter(a=>isOpen(a)||actionId(a)===String(b.actionId)).map(a=>'<option value="'+h(actionId(a))+'" '+(actionId(a)===String(b.actionId)?"selected":"")+'>'+h(a.task)+'</option>').join("");
-  openSheet(editing?"Edit Time Block":"Schedule Time",'<form id="planBlockForm"><div class="form-grid"><div class="form-group"><label>Block type</label><select name="type"><option value="action" '+(kind==="action"?"selected":"")+'>Action</option><option value="meeting" '+(kind==="meeting"?"selected":"")+'>Meeting (fixed)</option><option value="prep" '+(kind==="prep"?"selected":"")+'>Protected prep (fixed)</option></select></div><div class="form-group"><label>Action</label><select name="actionId"><option value="">Choose action…</option>'+options+'</select></div><div class="form-group full"><label>Title (meeting / prep)</label><input class="field" name="title" value="'+h(b.title||"")+'" placeholder="Meeting or preparation"></div><div class="form-group"><label>Date</label><input class="field" name="date" type="date" required value="'+h(ds)+'"></div><div class="form-group"><label>Start</label><input class="field" name="start" type="time" step="900" required value="'+h(t)+'"></div><div class="form-group"><label>Duration (hours)</label><input class="field" name="hours" type="number" min=".25" max="8" step=".25" required value="'+h(b.hours||((getAction(b.actionId)||{}).estimatedHours)||1)+'"></div><div class="form-group"><label>Conflicts</label><select name="conflict"><option value="manual">Keep fixed blocks; ask me to move</option><option value="make-room">Make Room — move flexible actions</option></select></div></div><p class="muted">Due dates remain unchanged. Meetings and prep are protected. Outlook sync is not active.</p><div class="sheet-actions"><button type="button" class="btn" data-close-sheet>Cancel</button>'+(editing?'<button type="button" class="btn" id="planNextWeek">Next week</button><button type="button" class="btn danger" id="planUnschedule">Unschedule</button>':"")+'<button class="btn primary" type="submit">Save Block</button></div></form>');
+  openSheet(editing?"Edit Time Block":"Schedule Time",'<form id="planBlockForm"><div class="form-grid"><div class="form-group"><label>Block type</label><select name="type"><option value="action" '+(kind==="action"?"selected":"")+'>Action</option><option value="meeting" '+(kind==="meeting"?"selected":"")+'>Meeting (fixed)</option><option value="prep" '+(kind==="prep"?"selected":"")+'>Protected prep (fixed)</option></select></div><div class="form-group"><label>Action</label><select name="actionId"><option value="">Choose action…</option>'+options+'</select></div><div class="form-group full"><label>Title (meeting / prep)</label><input class="field" name="title" value="'+h(b.title||"")+'" placeholder="Meeting or preparation"></div><div class="form-group"><label>Date</label><input class="field" name="date" type="date" required value="'+h(ds)+'"></div><div class="form-group"><label>Start</label><input class="field" name="start" type="time" step="900" required value="'+h(t)+'"></div><div class="form-group"><label>Duration (hours)</label><input class="field" name="hours" type="number" min=".25" max="8" step=".25" required value="'+h(b.hours||((getAction(b.actionId)||{}).estimatedHours)||1)+'"></div><div class="form-group"><label>Conflicts</label><select name="conflict"><option value="manual">Keep fixed blocks; ask me to move</option><option value="make-room">Make Room — move flexible actions</option></select></div></div><p class="muted">Due dates remain unchanged. Meetings and prep are protected. Outlook sync is not active.</p><div class="sheet-actions"><button type="button" class="btn" data-close-sheet>Cancel</button>'+(editing&&kind==='action'?'<button type="button" class="btn" id="planLogWork">Log actual hours</button>':'')+(editing?'<button type="button" class="btn" id="planNextWeek">Next week</button><button type="button" class="btn danger" id="planUnschedule">Unschedule</button>':"")+'<button class="btn primary" type="submit">Save Block</button></div></form>');
+  document.getElementById("planLogWork")?.addEventListener("click",()=>review(b));
   const f=document.getElementById("planBlockForm");if(!f)return;
   const sync=()=>{const x=f.elements.type.value;f.elements.actionId.disabled=x!=="action";f.elements.title.disabled=x==="action";};
   f.elements.type.addEventListener("change",sync);sync();
@@ -219,57 +223,43 @@ async function autoSchedule(){
     toast(count?count+" action"+(count===1?"":"s")+" scheduled and saved":"No open slots found for these actions.");
   });
 }
-async function notFinished(b,remaining){
-  if(writing)return;
-  const no=document.getElementById("planNo");
-  const error=document.getElementById("planReviewError");
-  const buttons=[...document.querySelectorAll(".plan-review-actions button")];
-  const closers=[...document.querySelectorAll("#sheet [data-close-sheet]")];
-  if(!no)return;
-  if(error){error.hidden=true;error.textContent="";}
-  for(const btn of [...buttons,...closers])btn.disabled=true;
-  no.textContent="Saving…";
-  try{
-    await withBusy(async()=>{
-      try{
-        const a=getAction(b.actionId);
-        if(!a)throw Error("Action not found.");
-        const hours=validHours(remaining);
-        // Do not rewrite the entire Action row when the remaining estimate is unchanged.
-        if(Number(a.estimatedHours||0)!==hours){
-          const payload=Object.assign({},a,{actionId:a.actionId||"",row:a.row,estimatedHours:hours,repeats:a.repeats==="Yes",status:a.status});
-          await bridge.call("saveAction",payload);
-          // The API transaction receipt confirms the write; keep the local view in sync.
-          a.estimatedHours=hours;
-        }
-        no.textContent="Updating schedule…";
-        await bridge.call("deleteNote",b.noteId);
-        // Avoid two expensive bootstrap requests. A successful transaction is a confirmed write.
-        state.data.notes=(state.data.notes||[]).filter(n=>String(n.noteId)!==String(b.noteId));
-        closeSheet();
-        render();
-        toast("Remaining work returned to Needs Scheduling");
-      }catch(e){
-        if(error){
-          error.textContent="Could not complete the review: "+(e.message||String(e))+" Check the planner before retrying.";
-          error.hidden=false;
-        }
-        throw e;
-      }
-    });
-  }finally{
-    if(document.getElementById("planNo")===no){
-      no.textContent="Not finished";
-      for(const btn of [...buttons,...closers])btn.disabled=false;
-    }
-  }
+// Actual time is a normal Time Log entry; the marker links it to its calendar block.
+// Refresh before writing and reuse the existing entry ID on retries and edits.
+const uncertainWork=new Set();
+async function recordWork(b,hours,description,complete){
+  hours=Number(hours);
+  if(!Number.isFinite(hours)||hours<=0||Math.abs(Math.round(hours*100)-hours*100)>1e-8)throw Error("Enter actual hours greater than zero, with up to two decimals.");
+  const fresh=await bridge.call("getBootstrap");state.data=fresh;
+  const a=getAction(b.actionId);if(!a)throw Error("Action not found. Refresh the calendar.");
+  const prior=workEntry(b),marker=workMarker(b);
+  if(uncertainWork.has(marker)&&!prior)throw Error("The previous save is unverified. Refresh and check the Time log before retrying; no additional entry was sent.");
+  const project=(fresh.projects||[]).find(p=>p.projectId===a.projectId);
+  const payload={date:b.date,hours,description:(String(description||a.task).replace(/\s*\[Forge block: [^\]]+\]/g,"").trim())+" "+marker,actionId:a.actionId||b.actionId,projectId:prior?prior.projectId:(a.projectId||""),goalId:prior?prior.goalId:(a.goalId||(project||{}).goalId||""),category:a.category||"General",source:"Other"};
+  if(prior)payload.timeEntryId=prior.timeEntryId;
+  uncertainWork.add(marker);
+  await bridge.call("saveTimeEntry",payload);
+  state.data=await bridge.call("getBootstrap");
+  const saved=workEntry(b);
+  if(!saved||Number(saved.hours)!==hours)throw Error("Hours save could not be verified. Refresh and check the Time log before retrying.");
+  uncertainWork.delete(marker);
+  if(complete){await bridge.call("setActionStatus",a.actionId||a.row,"Done");state.data=await bridge.call("getBootstrap");}
+  render();return saved;
 }
 function review(b){
   if(!b||b.type!=="action")return blockForm(b);
   const a=getAction(b.actionId);if(!a)return;
-  openSheet("Did you complete this task?",'<div class="completion-action"><strong>'+h(a.task)+'</strong><div class="meta"><span>'+h(fmtDate(b.date))+'</span><span>'+h(pretty(min(b.start)))+'</span><span>'+h(b.hours)+' hr scheduled</span></div></div><div class="form-group"><label>If not, how many hours remain?</label><input class="field" id="planRemaining" type="number" min=".25" max="8" step=".25" value="'+h(b.hours)+'"></div><p id="planReviewError" class="plan-review-error" role="alert" hidden></p><div class="sheet-actions plan-review-actions"><button class="btn" data-close-sheet>Later</button><button class="btn" id="planNo">Not finished</button><button class="btn primary" id="planYes">Yes, completed</button></div>');
-  document.getElementById("planNo").onclick=()=>notFinished(b,document.getElementById("planRemaining").value);
-  document.getElementById("planYes").onclick=()=>openCompleteAction(a,()=>withBusy(async()=>{await eraseBlock(b);toast("Completed and removed from schedule")}));
+  const entry=workEntry(b);
+  openSheet(entry?"Recorded work":"Log actual work",'<form id="planWorkForm"><div class="completion-action"><strong>'+h(a.task)+'</strong><div class="meta">'+h(fmtDate(b.date))+' · '+h(b.hours)+' hr scheduled · '+h(a.estimatedHours||0)+' hr estimated</div></div><div class="form-group"><label>Actual hours spent on this block</label><input class="field" id="planActual" type="number" min="0.01" step="0.01" required value="'+h(entry?entry.hours:"")+'" placeholder="1.5"></div><div class="form-group"><label>Work note (optional)</label><textarea id="planWorkNote">'+h(entry?String(entry.description||"").replace(/\s*\[Forge block: [^\]]+\]/g,""):"")+'</textarea></div><p class="muted">Actual hours are independent of the estimate and scheduled duration. They count toward Time, this task, its project and goal. The block stays gray on the calendar. Saving again updates this block’s entry rather than adding hours twice.</p><p id="planReviewError" role="alert" hidden></p><div class="sheet-actions"><button type="button" class="btn" data-close-sheet>Cancel</button><button type="submit" class="btn primary">'+(entry?'Update logged hours':'Log hours · keep task open')+'</button>'+ (isOpen(a)?'<button type="button" class="btn" id="planWorkComplete">Log hours · complete task</button>':'')+'</div></form>');
+  const f=document.getElementById("planWorkForm");
+  const save=async complete=>{
+    if(writing||!f.reportValidity())return;
+    writing=true;const buttons=[...f.querySelectorAll("button")];buttons.forEach(x=>x.disabled=true);
+    try{await recordWork(b,document.getElementById("planActual").value,document.getElementById("planWorkNote").value,complete);closeSheet();toast(complete?"Hours logged and task completed":"Actual hours logged; task status unchanged");}
+    catch(e){const error=document.getElementById("planReviewError");if(error){error.textContent=e.message||String(e);error.hidden=false;}}
+    finally{writing=false;buttons.forEach(x=>x.disabled=false);}
+  };
+  f.onsubmit=e=>{e.preventDefault();save(false);};
+  document.getElementById("planWorkComplete")?.addEventListener("click",()=>save(true));
 }
 function onClick(e){
   const el=e.target.closest("[data-plan-mode],[data-plan-offset],[data-plan-today],[data-plan-new],[data-plan-action],[data-plan-action-edit],[data-plan-auto],[data-plan-edit],[data-plan-review],[data-plan-open-date],[data-plan-new-date]");
@@ -299,5 +289,5 @@ function install(){
   });
 }
 install();
-window.plan35={todayPanel,calendarPanel,isPlannerNote,blocks,parentBlock,backlog,findGap,validateBlock,renderDay:calDay,writeBlock,eraseBlock,saveMoved,withBusy,conflicts};
+window.plan35={todayPanel,calendarPanel,isPlannerNote,blocks,parentBlock,backlog,findGap,validateBlock,recordWork,workEntry,renderDay:calDay,writeBlock,eraseBlock,saveMoved,withBusy,conflicts};
 })();

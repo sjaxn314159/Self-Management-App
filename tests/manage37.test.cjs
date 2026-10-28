@@ -4,9 +4,9 @@ const fs=require('node:fs');
 const app=fs.readFileSync('app.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 const css=fs.readFileSync('styles.css','utf8');
-test('Forge Command V3.8.2 assets and cache labels are updated',()=>{
-  assert.match(html,/V3\.8\.2/);
-  assert.match(html,/app\.js\?v=3\.8\.2/);
+test('Forge Command V3.8.4 assets and cache labels are updated',()=>{
+  assert.match(html,/V3\.8\.4/);
+  assert.match(html,/app\.js\?v=3\.8\.4/);
 });
 test('action form includes existing project list and unassigned option',()=>{
   assert.match(app,/function projectOptions37\(/);

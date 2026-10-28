@@ -156,3 +156,5 @@
 
 /* Keep brand text within the sidebar without shrinking the icon. */
 .brand>div:last-child{min-width:0;flex:1}
+
+.plan-block.action.plan-worked{background:#e8ebef;border-color:#b8c1cc;color:#4d5866;box-shadow:none}.plan-worked .plan-block-main,.plan-worked .plan-action-edit{color:#4d5866}.plan-worked small{color:#596575}
