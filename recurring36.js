@@ -1,4 +1,4 @@
-/* Atlas Command V3.6: recurring fixed-block engine.
+/* Forge Command V3.6: recurring fixed-block engine.
    Series are stored once in an existing Google Sheets Notes row. A recurring
    event is expanded for the visible date range, not materialized as hundreds
    of duplicate rows. Exceptions and future edits remain in that one record.

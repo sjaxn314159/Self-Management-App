@@ -1,4 +1,4 @@
-name: Atlas Command 3.6 checks
+name: Forge Command 3.6 checks
 on:
   push:
     branches: [main, "release/**"]
@@ -19,7 +19,7 @@ jobs:
           node --check recurring36.js
           node --check atlas36-ui.js
           node --check sw.js
-      - name: Validate Atlas Command icons
+      - name: Validate Forge Command icons
         run: python3 tests/verify_icons.py
       - name: Planner smoke tests
         run: node --test tests/*.test.cjs

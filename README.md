@@ -1,6 +1,6 @@
-# Atlas Command V3.8
+# Forge Command V3.8.2
 
-**Personal Operations System** — calendar-first time blocking, action management,
+**Professional Operations System** — calendar-first time blocking, action management,
 goals, routines, notes, work logs, and recurring meetings.
 
 ## Architecture
@@ -78,3 +78,9 @@ If a write cannot be verified, refresh the app and inspect the action before ret
 The New Sub-Action text box and Add button remain enabled while a previous step is
 saving to Google Sheets. Rapid changes are queued and saved sequentially, with
 latest edits retained. Refresh before retrying if an API write cannot be verified.
+
+## Brand architecture
+
+Forge is the professional brand; Atlas is the home and personal brand.
+Forge Command retains the existing app URL, data identifiers, and integration settings.
+Legacy internal Atlas identifiers remain for compatibility with saved checklists and schedules.

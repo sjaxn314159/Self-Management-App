@@ -1,6 +1,6 @@
 {
-  "name": "Atlas Command — Personal Operations System",
-  "short_name": "Atlas Command",
+  "name": "Forge Command — Professional Operations System",
+  "short_name": "Forge Command",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f4f6f9",
@@ -25,5 +25,5 @@
       "purpose": "any"
     }
   ],
-  "description": "Personal Operations System — goals, actions, meetings and time-blocked execution"
+  "description": "Professional Operations System — goals, actions, meetings and time-blocked execution"
 }

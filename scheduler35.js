@@ -128,7 +128,7 @@ function needs(){
   return '<div class="card plan-needs"><div class="card-head"><div><h3>Needs Scheduling <span class="pill">'+a.length+'</span></h3><p>Open actions due within 30 days (plus overdue and undated). Due dates never change when scheduling.</p></div><button class="btn primary" data-plan-auto>Auto-Schedule</button></div><div class="card-body">'+(items.length?items.map(x=>'<div class="plan-backlog-row"><div><strong>'+h(x.task)+'</strong><div class="meta"><span class="pill '+priorityClass(x.priority)+'">'+h(x.priority)+'</span><span>'+h(x.dueDate?fmtDate(x.dueDate):"No due date")+'</span><span>'+h(Number(x.estimatedHours)||1)+' hr estimate</span></div></div><button class="btn" data-plan-action="'+h(actionId(x))+'">Schedule</button></div>').join("")+(a.length>items.length?'<p class="muted">Showing first 28. Schedule these to reveal more.</p>':""):empty("Everything in the next 30 days has a time slot."))+'</div></div>';
 }
 function top(){
-  return '<div class="plan-head"><div><span class="plan-eyebrow">ATLAS COMMAND · TIME-BLOCK PLANNER</span><h2>Your next move, not just your due date.</h2></div><div class="inline-actions"><button class="btn" data-plan-new="meeting">+ Meeting</button><button class="btn" data-plan-new="prep">+ Protected prep</button></div></div>';
+  return '<div class="plan-head"><div><span class="plan-eyebrow">FORGE COMMAND · TIME-BLOCK PLANNER</span><h2>Your next move, not just your due date.</h2></div><div class="inline-actions"><button class="btn" data-plan-new="meeting">+ Meeting</button><button class="btn" data-plan-new="prep">+ Protected prep</button></div></div>';
 }
 function todayPanel(){return top()+nowPanel()+calendar()+needs();}
 function calendarPanel(){return top()+calendar()+needs();}

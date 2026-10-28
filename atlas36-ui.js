@@ -1,4 +1,4 @@
-/* Atlas Command 3.6 — recurrence editor, built around the V3.5 planner's
+/* Forge Command 3.6 — recurrence editor, built around the V3.5 planner's
    existing verified Google Sheets save functions. */
 (function(global){
 "use strict";

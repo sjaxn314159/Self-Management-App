@@ -1,4 +1,4 @@
-"""Validate Atlas Command PNG icons with Python standard library."""
+"""Validate Forge Command PNG icons with Python standard library."""
 from pathlib import Path
 import struct
 import zlib

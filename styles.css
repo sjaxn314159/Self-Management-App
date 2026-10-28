@@ -70,7 +70,7 @@
 .plan-day .plan-block.plan-compact small{display:none}
 @media(max-width:800px){.plan-day{--plan-slot-height:60px}}
 
-/* Atlas Command 3.6 brand + recurring meeting controls */
+/* Forge Command 3.6 brand + recurring meeting controls */
 .brand strong{letter-spacing:-.025em}
 .brand span{font-size:10px;font-weight:760;letter-spacing:.045em;white-space:nowrap}
 .atlas-repeat-fields{background:#f7faff;border:1px solid #e1eafb;border-radius:12px;padding:12px;margin-top:14px}
@@ -105,7 +105,7 @@
 @media(max-width:800px){.plan-action-edit{padding:5px 7px}.plan-week-list .plan-action-edit{min-height:25px;min-width:28px}.plan-week-list .plan-block.has-action-edit{padding-right:44px}}
 
 
-/* Atlas Command v3.7 — action/project linking and reversible deletion */
+/* Forge Command v3.7 — action/project linking and reversible deletion */
 .action-controls37{white-space:nowrap}
 .danger-link37{color:#bf353b}
 .danger-link37:hover{color:#962127;text-decoration:underline}
@@ -123,7 +123,7 @@
 .plan-review-error:not([hidden]){display:block;margin:12px 0 4px;padding:12px 14px;border:1px solid #e9b8b8;border-radius:10px;background:#fff2f2;color:#963333;line-height:1.45}
 
 
-/* Atlas Command V3.8 — Sub-Actions */
+/* Forge Command V3.8 — Sub-Actions */
 .subactions38{border-top:1px solid #e5eaf2;padding-top:18px;margin-top:8px;}
 .subactions38-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;}
 .subactions38-heading label{margin:0;font-size:14px;font-weight:800;color:#18233e;}

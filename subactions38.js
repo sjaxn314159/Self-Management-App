@@ -1,4 +1,4 @@
-/* Atlas Command V3.8 — Google Sheets-backed sub-action checklists.
+/* Forge Command V3.8 — Google Sheets-backed sub-action checklists.
    Uses the existing authenticated saveNote/getBootstrap API; no backend change.
    One tagged Notes record per Action ID. Recurring occurrences inherit an
    unchecked copy of the most recent prior checklist in their series. */

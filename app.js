@@ -119,7 +119,7 @@ async function deleteAction37(id){
   const a=actionById(id);if(!a)return toast('Action no longer exists.');
   if(a.source==='Project')return toast('Delete synchronized actions from the project workbook.');
   if(!a.actionId)return toast('Action ID is missing. Refresh and try again.');
-  if(!confirm('Delete action "'+a.task+'"?\n\nIt will disappear from Atlas Command and the calendar. Historical time logs and the original row remain in Google Sheets.'))return;
+  if(!confirm('Delete action "'+a.task+'"?\n\nIt will disappear from Forge Command and the calendar. Historical time logs and the original row remain in Google Sheets.'))return;
   deleting37=true;
   try{
     await bridge.call('deleteAction',a.actionId);
@@ -133,7 +133,7 @@ async function deleteProject37(id){
   if(deleting37||!canManage37('deleteProjects'))return;
   const p=projectById(id);if(!p)return toast('Project no longer exists.');
   const count=(state.data.actions||[]).filter(a=>String(a.projectId)===String(id)).length;
-  if(!confirm('Delete project "'+p.projectName+'"?\n\nThe project disappears from Atlas Command. Its separate Google Drive workbook is preserved. '+count+' linked action(s) will remain as unassigned history. The project can be restored from its row in the Projects sheet, but action links will need reassignment.'))return;
+  if(!confirm('Delete project "'+p.projectName+'"?\n\nThe project disappears from Forge Command. Its separate Google Drive workbook is preserved. '+count+' linked action(s) will remain as unassigned history. The project can be restored from its row in the Projects sheet, but action links will need reassignment.'))return;
   deleting37=true;
   try{
     await bridge.call('deleteProject',p.projectId);
