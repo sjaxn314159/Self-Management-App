@@ -64,3 +64,17 @@ test("weekly series renders correctly when navigating months later",()=>{
  const e=load(),r=e.expand([series()],"2027-05-01","2027-05-31");
  assert.equal(r.length,4);assert(r.every(x=>x.date.startsWith("2027-05")));
 });
+
+test("meeting project and goal associations follow scoped recurrence changes",()=>{
+ const e=load(),original={...series(),projectId:"P1",goalId:"G1"};
+ const occurrence=e.expand([original],"2026-11-06","2026-11-06")[0];
+ const next=e.changeSeries(original,occurrence,{date:"2026-11-06",start:"10:00",hours:1,title:"Gemba revised",projectId:"P2",goalId:"G2"},"future",{frequency:"weekly",every:1,weekdays:[5],until:""});
+ const blocks=e.expand([next],"2026-10-23","2026-11-20");
+ assert.deepEqual(blocks.map(x=>x.projectId),["P1","P1","P2","P2","P2"]);
+ assert.deepEqual(blocks.map(x=>x.goalId),["G1","G1","G2","G2","G2"]);
+ const one=e.changeSeries(original,occurrence,{date:"2026-11-06",start:"11:00",hours:2,title:"Special",projectId:"PX",goalId:"GX"},"one",null);
+ const instances=e.expand([one],"2026-10-23","2026-11-13");
+ assert.equal(instances[2].projectId,"PX");assert.equal(instances[3].projectId,"P1");
+ const all=e.changeSeries(original,occurrence,{date:"2026-10-23",start:"09:00",hours:1,title:"New",projectId:"PA",goalId:"GA"},"all",{frequency:"weekly",every:1,weekdays:[5],until:""});
+ assert(e.expand([all],"2026-10-23","2026-11-13").every(x=>x.projectId==="PA"&&x.goalId==="GA"));
+});
