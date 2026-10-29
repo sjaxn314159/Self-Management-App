@@ -32,6 +32,7 @@ function blocks(){
   const from=[dateShift(now,-90),dateShift(current,-65)].sort()[0];
   const to=[dateShift(now,130),dateShift(current,65)].sort().pop();
   cachedBlocks=window.AtlasRecurrence36?window.AtlasRecurrence36.expand(raw,from,to):raw;
+  cachedBlocks=cachedBlocks.map(b=>Object.assign(b,{workEntry:b.type==="meeting"&&window.ForgeMeetingLog39?window.ForgeMeetingLog39.entryFor(b,state.data.timeEntries||[]):b.workEntry}));
   cachedData=notes;cachedCursor=current;cachedDate=now;cachedTime=state.data.timeEntries;
   return cachedBlocks;
 }
@@ -83,7 +84,7 @@ function blockHtml(b,short,dayView=false){
       '<button type="button" class="plan-action-edit" data-plan-action-edit="'+id+'" aria-label="Edit action: '+h(label(b))+'" title="Edit action details">✎ <span class="action-edit-text">Edit</span></button>'+
       '</div>';
   }
-  return '<button class="plan-block '+h(kind)+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'" '+scheduled+' title="Tap to edit; drag to move">'+content+'</button>';
+  return '<button class="plan-block '+h(kind)+(b.workEntry?' plan-worked':'')+compact+'"'+inlineStyle+' draggable="true" data-plan-drag="'+h(b.noteId)+'" '+scheduled+' title="Tap to edit; drag to move">'+content+'</button>';
 }
 function calControls(){
   return '<div class="plan-toolbar"><div class="seg">'+["day","week","month"].map(m=>'<button data-plan-mode="'+m+'" class="'+(state.calendarMode===m?"active":"")+'">'+m[0].toUpperCase()+m.slice(1)+'</button>').join("")+'</div><div class="cal-nav"><button class="btn" data-plan-offset="-1" aria-label="Previous">‹</button><button class="btn" data-plan-today>Today</button><button class="btn" data-plan-offset="1" aria-label="Next">›</button></div></div>';
@@ -150,13 +151,13 @@ function findGap(hours,fromDate,afterMinute,ignoreNotes,additional){
 }
 async function writeBlock(data){
   const b=validateBlock(Object.assign({},data));
-  const payload={noteId:b.noteId||"",date:b.date,title:"Planner · "+(b.type==="action"?(getAction(b.actionId)||{}).task||"Action":b.title),note:JSON.stringify({uid:b.uid||uid(),type:b.type,actionId:b.actionId||"",title:b.title||"",date:b.date,start:b.start,hours:b.hours,recurrence:b.recurrence||null}),tags:TAG,pinned:"No"};
+  const payload={noteId:b.noteId||"",date:b.date,title:"Planner · "+(b.type==="action"?(getAction(b.actionId)||{}).task||"Action":b.title),note:JSON.stringify({uid:b.uid||uid(),type:b.type,actionId:b.actionId||"",title:b.title||"",projectId:b.projectId||"",goalId:b.goalId||"",date:b.date,start:b.start,hours:b.hours,recurrence:b.recurrence||null}),tags:TAG,pinned:"No"};
   const key=JSON.parse(payload.note).uid;
   await bridge.call("saveNote",payload);
   const fresh=await bridge.call("getBootstrap");
   const saved=(fresh.notes||[]).find(n=>{
     if(!isPlannerNote(n))return false;
-    try{const j=JSON.parse(n.note||"{}");return j.uid===key&&j.date===b.date&&j.start===b.start&&Number(j.hours)===Number(b.hours)&&JSON.stringify(j.recurrence||null)===JSON.stringify(b.recurrence||null);}catch(e){return false;}
+    try{const j=JSON.parse(n.note||"{}");return j.uid===key&&j.date===b.date&&j.start===b.start&&Number(j.hours)===Number(b.hours)&&String(j.projectId||"")===String(b.projectId||"")&&String(j.goalId||"")===String(b.goalId||"")&&JSON.stringify(j.recurrence||null)===JSON.stringify(b.recurrence||null);}catch(e){return false;}
   });
   if(!saved)throw Error("Block save was not verified. Check the planner before retrying.");
   state.data=fresh;render();
@@ -191,7 +192,7 @@ async function withBusy(job){
 }
 function blockForm(b){
   b=b||{};
-  if(b.workEntry)return review(b);
+  if(b.workEntry&&b.type==="action")return review(b);
   if(window.Atlas36UI&&b.type!=="action")return window.Atlas36UI.blockForm(b);
   const editing=!!b.noteId;
   const kind=b.type||"action",ds=b.date||iso(state.cursor),t=b.start||"09:00";
