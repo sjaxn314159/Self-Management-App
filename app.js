@@ -456,6 +456,12 @@ async function boot(){
     bridge=new ApiClient(savedUrl,savedKey);
     state.data=await bridge.call('getBootstrap');
     $('#boot').classList.add('hidden');$('#app').classList.remove('hidden');render();
+    window.ForgeMeetingLog39?.start({
+      getData:()=>state.data,
+      getBridge:()=>bridge,
+      onFresh:fresh=>{state.data=fresh;render();},
+      onError:error=>toast('Meeting hours not confirmed: '+(error.message||String(error))+'. Check Time before retrying.')
+    });
   }catch(e){
     $('#boot').innerHTML=`<div class="setup-card"><h2>Could not connect</h2><p>${esc(e.message)}</p><button id="resetConn" class="btn">Reset connection</button></div>`;
     setTimeout(()=>{$('#resetConn')?.addEventListener('click',()=>{localStorage.removeItem('sm_api_url');localStorage.removeItem('sm_api_key');location.reload()})},0);
