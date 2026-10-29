@@ -44,7 +44,7 @@ function expandOne(record,from,to){
   const rule=recurrence(record.recurrence,record.date);
   const segments=[{
     effectiveDate:record.date,date:record.date,start:record.start,hours:record.hours,
-    title:record.title,frequency:rule.frequency,every:rule.every,weekdays:rule.weekdays
+    title:record.title,projectId:record.projectId||"",goalId:record.goalId||"",frequency:rule.frequency,every:rule.every,weekdays:rule.weekdays
   },...rule.segments].sort((a,b)=>a.effectiveDate.localeCompare(b.effectiveDate));
   const found=[],paddingFrom=from;
   for(let i=0;i<segments.length;i++){
@@ -66,6 +66,7 @@ function expandOne(record,from,to){
       const chosen=change&&change.date?change.date:ds;
       if(chosen<from||chosen>to)continue;
       found.push({...record,date:chosen,start:actual.start,hours:Number(actual.hours),title:actual.title,
+        projectId:actual.projectId??record.projectId??"",goalId:actual.goalId??record.goalId??"",
         occurrenceDate:ds,isRecurring:true,seriesId:record.uid||record.noteId});
     }
   }
@@ -76,7 +77,10 @@ function expandOne(record,from,to){
     if(!seg||origin<seg.date||rule.until&&origin>rule.until)continue;
     const segRule={frequency:seg.frequency||rule.frequency,every:seg.every||rule.every,weekdays:seg.weekdays||rule.weekdays};
     if(!occurs(origin,seg.date,segRule))continue;
-    found.push({...record,date:change.date,start:change.start||seg.start,hours:Number(change.hours||seg.hours),title:change.title||seg.title,occurrenceDate:origin,isRecurring:true,seriesId:record.uid||record.noteId});
+    const actual={...seg,...change};
+    found.push({...record,date:actual.date,start:actual.start,hours:Number(actual.hours),title:actual.title,
+      projectId:actual.projectId??record.projectId??"",goalId:actual.goalId??record.goalId??"",
+      occurrenceDate:origin,isRecurring:true,seriesId:record.uid||record.noteId});
   }
   return found;
 }
@@ -89,18 +93,19 @@ function changeSeries(parent,occurrence,newBlock,scope,ruleFields){
   if(!parent.recurrence)throw Error("This is not a recurring series.");
   const out=own(parent),r=recurrence(out.recurrence,out.date),origin=occurrence.occurrenceDate||occurrence.date;
   if(scope==="one"){
-    r.exceptions[origin]={date:newBlock.date,start:newBlock.start,hours:Number(newBlock.hours),title:newBlock.title};
+    r.exceptions[origin]={date:newBlock.date,start:newBlock.start,hours:Number(newBlock.hours),title:newBlock.title,projectId:newBlock.projectId||"",goalId:newBlock.goalId||""};
   }else if(scope==="future"){
     if(newBlock.date<origin)throw Error("For future edits, the new starting date cannot be earlier than the selected occurrence.");
     // A new segment supersedes every later segment, without deleting past changes.
     r.segments=r.segments.filter(x=>x.effectiveDate<origin);
     for(const k of Object.keys(r.exceptions))if(k>=origin)delete r.exceptions[k];
     const n=recurrence(ruleFields,newBlock.date);
-    r.segments.push({effectiveDate:origin,date:newBlock.date,start:newBlock.start,hours:Number(newBlock.hours),title:newBlock.title,frequency:n.frequency,every:n.every,weekdays:n.weekdays});
+    r.segments.push({effectiveDate:origin,date:newBlock.date,start:newBlock.start,hours:Number(newBlock.hours),title:newBlock.title,projectId:newBlock.projectId||"",goalId:newBlock.goalId||"",frequency:n.frequency,every:n.every,weekdays:n.weekdays});
     r.until=n.until;
   }else if(scope==="all"){
     const n=recurrence(ruleFields,newBlock.date);
     out.date=newBlock.date;out.start=newBlock.start;out.hours=Number(newBlock.hours);out.title=newBlock.title;
+    out.projectId=newBlock.projectId||"";out.goalId=newBlock.goalId||"";
     out.recurrence=n;
     return out;
   }else throw Error("Choose which meetings to edit.");
