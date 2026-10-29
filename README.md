@@ -91,3 +91,37 @@ Legacy internal Atlas identifiers remain for compatibility with saved checklists
 Open an action calendar block and choose **Log actual hours**. Enter actual time independently of the estimate or scheduled duration. **Log hours · keep task open** records progress without completing the action; **Log hours · complete task** also finishes the action. Both preserve a gray calendar history block. Time uses the existing Time Log with action, project and goal links, including the project goal when the action has no direct goal. Open a gray block to correct its total; schedule a new block for another work session. Logged blocks no longer reserve future planning capacity.
 
 No Apps Script redeployment is required. The calendar link is retained in the time entry description; deleting that entry also removes its recorded-work indicator. Existing historical blocks deleted by older versions cannot be reconstructed automatically.
+
+
+## V3.9 — Meeting project/goal attribution and automatic Hours Log
+
+In **New/Edit Meeting** (or Protected Prep), choose an optional **Project** and
+**Goal**. Selecting a project preselects its linked goal, and the goal can be
+overridden. These associations persist in the scheduled Notes JSON and follow
+recurring-meeting edits (one occurrence, future occurrences, or entire series).
+
+Meeting time (not Protected Prep) is automatically logged as a normal **Time**
+entry once the scheduled meeting end has passed, using the scheduled duration,
+date, project, and goal. Each recurring occurrence has a distinct
+`[Forge meeting: SERIES_ID:ORIGINAL_DATE]` marker so refreshing/reopening
+does not ordinarily create duplicate entries. Editing the Time record retains
+its marker; an existing entry is not overwritten, so corrected actual hours
+remain intact. The feature starts on **October 29, 2026**; earlier meetings
+are not retroactively logged.
+
+**Runtime limitation:** Forge Command is a browser PWA, not a continuously
+running scheduler. With the app open it checks every 30 seconds, and it
+reconciles missed meetings upon reopening or focusing the app. A completely
+closed app cannot perform writes precisely at the meeting end; that requires
+a time-driven Google Apps Script backend trigger and deployment. The PWA
+uses the existing `getBootstrap` and `saveTimeEntry` endpoints with no backend
+redeployment. If a write's result is uncertain, automatic retries are paused
+for that occurrence during the active session and the user is warned to
+inspect the Time log. Distinct devices concurrently writing a first entry
+remain an uncommon possible duplication case without backend-side atomic
+deduplication.
+
+Cancel or remove a scheduled meeting before its end to prevent automatic
+logging. Removing a meeting after it was logged does not delete historical
+time entries. Deleting only its Time entry while the meeting remains scheduled
+may cause it to be automatically logged again on the next check.
